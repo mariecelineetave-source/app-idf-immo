@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Installer le socle — app.idf.immo</title>
+<style>
+:root{
+  --nuit:#0E2E52; --ombre:#10233C; --encre:#132639; --mousse:#5C6B80;
+  --papier:#F6F8FB; --blanc:#fff; --ligne:#D8DEE7; --clair:#E4EBF4;
+  --or:#8C6A38; --vert:#1F6B57; --rouge:#9B3A2F;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--papier);color:var(--encre);
+  font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+.c{max-width:720px;margin:0 auto;padding:28px 18px 80px}
+h1{font-size:1.5rem;line-height:1.2;margin:0 0 6px;color:var(--nuit)}
+.sous{color:var(--mousse);margin:0 0 26px;font-size:.95rem}
+h2{font-size:1.05rem;margin:34px 0 10px;color:var(--nuit)}
+p{margin:0 0 12px}
+code{background:var(--clair);padding:.1em .4em;border-radius:3px;font-size:.88em}
+.etape{background:var(--blanc);border:1px solid var(--ligne);border-radius:4px;
+  padding:18px 20px;margin:14px 0;display:flex;gap:16px;align-items:flex-start}
+.num{flex:none;width:30px;height:30px;border-radius:50%;background:var(--nuit);color:#fff;
+  display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.92rem}
+.etape p:last-child{margin-bottom:0}
+button.gros{
+  display:block;width:100%;padding:20px;font-size:1.12rem;font-weight:700;
+  background:var(--nuit);color:#fff;border:0;border-radius:4px;cursor:pointer;
+  margin:20px 0 8px;font-family:inherit
+}
+button.gros:active{transform:translateY(1px)}
+button.gros[disabled]{background:var(--vert)}
+button.gros:focus-visible{outline:3px solid var(--or);outline-offset:2px}
+.etat{text-align:center;font-size:.9rem;color:var(--mousse);min-height:1.5em;margin:0 0 22px}
+.etat.ok{color:var(--vert);font-weight:600}
+.etat.ko{color:var(--rouge);font-weight:600}
+.avert{background:#FDF4E7;border-left:4px solid var(--or);padding:15px 17px;border-radius:3px;margin:20px 0}
+.avert strong{color:var(--or)}
+.bien{background:#E9F4F0;border-left:4px solid var(--vert);padding:15px 17px;border-radius:3px;margin:20px 0}
+textarea{width:100%;height:150px;font-family:ui-monospace,Menlo,Consolas,monospace;
+  font-size:.78rem;border:1px solid var(--ligne);border-radius:4px;padding:10px;background:var(--blanc);color:var(--encre)}
+.compte{font-size:.85rem;color:var(--mousse);text-align:center}
+</style>
+</head>
+<body>
+<div class="c">
+
+<h1>Installer le socle central</h1>
+<p class="sous">Le script est long (plus de 400 lignes) : impossible à sélectionner au doigt. Le bouton ci-dessous le copie en entier, d'un seul coup.</p>
+
+<div class="avert">
+  <p><strong>Avant de commencer.</strong> Ce script s'applique au projet Supabase qui fait déjà tourner <code>gardiens.idf.immo</code>. Il ne crée pas de seconde base : il transforme celle-ci en socle commun aux quatre réseaux.</p>
+  <p style="margin-bottom:0">Il a été exécuté et vérifié sur une copie complète de la base avant de t'être donné. Il peut être lancé deux fois sans rien casser.</p>
+</div>
+
+<div class="bien">
+  <p style="margin-bottom:0"><strong>gardiens.idf.immo ne bougera pas.</strong> La table que le site lit devient une vue portant le même nom et les mêmes colonnes. Vérifié : la fiche du gardien, ses opportunités, ses primes et son journal reviennent à l'identique après migration.</p>
+</div>
+
+<button class="gros" id="copier">Copier le script en entier</button>
+<p class="etat" id="etat">Chargement du script…</p>
+
+<h2>Ensuite, dans Supabase</h2>
+
+<div class="etape"><span class="num">1</span><div>
+  <p>Ouvre <strong>supabase.com</strong> et connecte-toi.</p>
+</div></div>
+
+<div class="etape"><span class="num">2</span><div>
+  <p>Clique sur ton projet — <strong>celui qui sert déjà les gardiens</strong>. Il n'y en a qu'un, tu ne peux pas te tromper.</p>
+</div></div>
+
+<div class="etape"><span class="num">3</span><div>
+  <p>Dans la colonne de gauche, cherche l'icône <strong>SQL Editor</strong> (une petite feuille avec « SQL » dessus).</p>
+</div></div>
+
+<div class="etape"><span class="num">4</span><div>
+  <p>En haut, clique sur <strong>« New query »</strong>. Une grande zone blanche vide apparaît.</p>
+</div></div>
+
+<div class="etape"><span class="num">5</span><div>
+  <p><strong>Appuie longuement au milieu de la zone blanche</strong>, puis choisis <strong>« Coller »</strong>. Le script s'écrit tout seul.</p>
+</div></div>
+
+<div class="etape"><span class="num">6</span><div>
+  <p>En bas à droite, clique sur le bouton vert <strong>« Run »</strong>.</p>
+  <p>Si un message <strong>« Potential issue detected »</strong> apparaît, c'est normal : Supabase prévient toujours quand un script modifie des tables. Clique sur <strong>« Run this query »</strong>.</p>
+</div></div>
+
+<div class="etape"><span class="num">7</span><div>
+  <p>Attends quelques secondes. Tu dois voir <strong>« Success. No rows returned »</strong>.</p>
+  <p>C'est la bonne réponse : le script installe des tables, il n'affiche rien.</p>
+</div></div>
+
+<h2>Puis vérifie que rien n'a bougé</h2>
+<p>Toujours dans le SQL Editor, efface tout, colle cette seule ligne et clique sur Run :</p>
+<textarea readonly id="verif">select * from gardiens;</textarea>
+<p>Tu dois voir la liste des gardiens, avec les mêmes colonnes qu'avant : <code>id</code>, <code>prenom</code>, <code>nom</code>, <code>email</code>, <code>telephone</code>, <code>residence</code>, <code>commune</code>, <code>iban</code>, <code>cree_le</code>. Si c'est le cas, le site des gardiens est intact.</p>
+
+<h2>Si quelque chose se passe mal</h2>
+<p>Ne recommence pas dix fois : envoie-moi le message d'erreur en entier, tel qu'il s'affiche. Il me dit exactement quelle ligne a coincé.</p>
+
+<textarea id="apercu" readonly aria-label="Aperçu du script"></textarea>
+<p class="compte" id="compte"></p>
+
+</div>
+
+<script>
+(function(){
+  var bouton = document.getElementById("copier");
+  var etat   = document.getElementById("etat");
+  var apercu = document.getElementById("apercu");
+  var compte = document.getElementById("compte");
+  var script = null;
+
+  fetch("socle.sql")
+    .then(function(r){ if(!r.ok) throw new Error(r.status); return r.text(); })
+    .then(function(t){
+      script = t;
+      apercu.value = t;
+      compte.textContent = t.split("\n").length + " lignes prêtes à copier";
+      etat.textContent = "Script prêt.";
+      etat.className = "etat";
+    })
+    .catch(function(){
+      etat.textContent = "Le script n'a pas pu être chargé. Recharge la page.";
+      etat.className = "etat ko";
+    });
+
+  bouton.addEventListener("click", function(){
+    if (!script){ etat.textContent = "Le script n'est pas encore chargé, attends une seconde."; return; }
+    function reussi(){
+      etat.textContent = "Copié. Va maintenant dans Supabase, étape 1 ci-dessous.";
+      etat.className = "etat ok";
+      bouton.textContent = "Copié ✓";
+      bouton.disabled = true;
+      setTimeout(function(){ bouton.textContent = "Copier à nouveau"; bouton.disabled = false; }, 4000);
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(script).then(reussi, secours);
+    } else { secours(); }
+  });
+
+  // Repli pour les navigateurs qui refusent le presse-papiers : on sélectionne
+  // le texte, la personne n'a plus qu'à appuyer sur « Copier ».
+  function secours(){
+    apercu.focus();
+    apercu.select();
+    apercu.setSelectionRange(0, 999999);
+    try {
+      document.execCommand("copy");
+      etat.textContent = "Copié. Va maintenant dans Supabase, étape 1 ci-dessous.";
+      etat.className = "etat ok";
+    } catch(e){
+      etat.textContent = "Le texte est sélectionné en bas de page : appuie dessus, puis « Copier ».";
+      etat.className = "etat ko";
+    }
+  }
+})();
+</script>
+</body>
+</html>
