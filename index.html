@@ -1,0 +1,1058 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>app.idf.immo — pilotage</title>
+<meta name="theme-color" content="#0E2E52">
+<style>
+/* ============================================================
+   app.idf.immo — back-office de l'écosystème IDF.immo
+   Palette de la famille. L'or est RÉSERVÉ aux primes.
+   ============================================================ */
+:root{
+  --sable:#EBF2F9; --craie:#F7FAFD; --parterre:#DCE8F4;
+  --buis:#1C5A9E; --ombre:#0E2E52; --azur:#1E88E5; --azur-fonce:#1668B5;
+  --ciel:#8FC6F2; --encre:#12263C; --mousse:#4C6B8A;
+  --ligne:#C5D6E6; --ligne-fine:#DCE7F2;
+  --or:#8C6A38; --or-clair:#C9A167; --or-fond:#F6EEE0;
+  --vert:#1F6B57; --vert-fond:#E1F0EA;
+  --rouge:#9B3A2F; --rouge-fond:#F8E6E2;
+  --rayon:10px;
+  --carte:0 1px 2px rgba(14,46,82,.05), 0 10px 30px -22px rgba(14,46,82,.45);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  background:var(--sable);color:var(--encre);font-size:16px;line-height:1.55;
+  -webkit-font-smoothing:antialiased;
+}
+a{color:var(--azur-fonce)}
+button{font:inherit;cursor:pointer}
+[hidden]{display:none!important}
+
+/* ---------- en-tête ---------- */
+.entete{background:var(--ombre);color:#fff;position:sticky;top:0;z-index:20}
+.entete .haut{display:flex;align-items:center;gap:14px;padding:11px 18px;max-width:1180px;margin:0 auto}
+.marque{font-weight:700;letter-spacing:-.01em;font-size:1.02rem}
+.marque .pt{color:var(--ciel)}
+.qui{margin-left:auto;font-size:.84rem;color:var(--ciel);white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis;max-width:38vw}
+.sortir{background:none;border:1px solid rgba(255,255,255,.28);color:#fff;
+  padding:5px 11px;border-radius:6px;font-size:.8rem}
+.sortir:hover{background:rgba(255,255,255,.1)}
+
+nav.rubriques{background:var(--ombre);border-top:1px solid rgba(255,255,255,.12);
+  overflow-x:auto;-webkit-overflow-scrolling:touch}
+nav.rubriques .dedans{display:flex;gap:2px;padding:0 12px;max-width:1180px;margin:0 auto}
+nav.rubriques button{
+  background:none;border:0;color:#B9D3EC;padding:11px 13px;font-size:.87rem;
+  white-space:nowrap;border-bottom:3px solid transparent;font-weight:500;
+}
+nav.rubriques button[aria-current="page"]{color:#fff;border-bottom-color:var(--ciel);font-weight:700}
+nav.rubriques button:hover{color:#fff}
+
+main{max-width:1180px;margin:0 auto;padding:22px 18px 90px}
+h1{font-size:1.5rem;line-height:1.2;margin-bottom:4px;letter-spacing:-.015em}
+.sous{color:var(--mousse);font-size:.93rem;margin-bottom:20px}
+h2{font-size:1.06rem;margin:26px 0 12px;letter-spacing:-.01em}
+h2:first-of-type{margin-top:0}
+
+/* ---------- compteurs ---------- */
+.compteurs{display:grid;grid-template-columns:repeat(auto-fit,minmax(148px,1fr));gap:12px;margin-bottom:24px}
+.compteur{background:var(--craie);border:1px solid var(--ligne-fine);border-radius:var(--rayon);
+  padding:14px 16px;box-shadow:var(--carte)}
+.compteur .val{font-size:1.7rem;font-weight:700;letter-spacing:-.02em;line-height:1.1;
+  font-variant-numeric:tabular-nums}
+.compteur .lib{font-size:.79rem;color:var(--mousse);text-transform:uppercase;letter-spacing:.06em;font-weight:600}
+.compteur.or{background:var(--or-fond);border-color:var(--or-clair)}
+.compteur.or .val{color:var(--or)}
+.compteur.or .lib{color:var(--or)}
+
+/* ---------- cartes & tableaux ---------- */
+.bloc{background:var(--craie);border:1px solid var(--ligne-fine);border-radius:var(--rayon);
+  box-shadow:var(--carte);overflow:hidden;margin-bottom:18px}
+.bloc-tete{display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  padding:13px 16px;border-bottom:1px solid var(--ligne-fine);background:#fff}
+.bloc-tete h3{font-size:.95rem}
+.bloc-tete .droite{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+.tableau{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:.9rem;min-width:560px}
+th{text-align:left;font-size:.72rem;text-transform:uppercase;letter-spacing:.07em;
+  color:var(--mousse);font-weight:700;padding:10px 14px;border-bottom:2px solid var(--ligne);white-space:nowrap}
+td{padding:11px 14px;border-bottom:1px solid var(--ligne-fine);vertical-align:top}
+tr:last-child td{border-bottom:0}
+tbody tr.cliquable{cursor:pointer}
+tbody tr.cliquable:hover{background:var(--parterre)}
+td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
+.vide{padding:26px 16px;text-align:center;color:var(--mousse);font-size:.92rem}
+
+/* ---------- pastilles d'état ---------- */
+.etat{display:inline-block;font-size:.73rem;font-weight:700;padding:3px 9px;border-radius:20px;
+  white-space:nowrap;letter-spacing:.01em}
+.e-recue{background:var(--parterre);color:var(--buis)}
+.e-encours{background:#E3F0FB;color:var(--azur-fonce)}
+.e-mandat{background:#E7F1FF;color:var(--buis)}
+.e-vendue{background:var(--vert-fond);color:var(--vert)}
+.e-prime{background:var(--or-fond);color:var(--or)}
+.e-close{background:#ECEFF3;color:var(--mousse)}
+.cat{display:inline-block;font-size:.7rem;font-weight:700;padding:2px 8px;border-radius:4px;
+  background:var(--parterre);color:var(--buis);text-transform:uppercase;letter-spacing:.05em}
+
+/* ---------- boutons ---------- */
+.b{border:1px solid var(--ligne);background:#fff;color:var(--encre);
+  padding:7px 13px;border-radius:7px;font-size:.86rem;font-weight:600}
+.b:hover{background:var(--parterre)}
+.b-1{background:var(--ombre);border-color:var(--ombre);color:#fff}
+.b-1:hover{background:var(--buis)}
+.b-or{background:var(--or);border-color:var(--or);color:#fff}
+.b-or:hover{background:#7A5C30}
+.b-petit{padding:5px 10px;font-size:.79rem}
+.b:disabled{opacity:.5;cursor:default}
+
+/* ---------- filtres ---------- */
+.filtres{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;align-items:center}
+select,input,textarea{
+  font:inherit;font-size:.88rem;padding:7px 10px;border:1px solid var(--ligne);
+  border-radius:7px;background:#fff;color:var(--encre);max-width:100%;
+}
+textarea{width:100%;min-height:78px;resize:vertical;line-height:1.5}
+label.champ{display:block;margin-bottom:11px}
+label.champ span{display:block;font-size:.78rem;font-weight:700;color:var(--mousse);
+  text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
+label.champ input,label.champ select{width:100%}
+.grille2{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:0 14px}
+
+/* ---------- fiche ---------- */
+.retour{background:none;border:0;color:var(--azur-fonce);font-size:.88rem;font-weight:600;
+  padding:0;margin-bottom:12px}
+dl.fiche{display:grid;grid-template-columns:minmax(120px,auto) 1fr;gap:0}
+dl.fiche dt{font-size:.74rem;text-transform:uppercase;letter-spacing:.06em;color:var(--mousse);
+  font-weight:700;padding:9px 14px 9px 16px;border-top:1px solid var(--ligne-fine)}
+dl.fiche dd{padding:9px 16px 9px 0;border-top:1px solid var(--ligne-fine);font-size:.92rem}
+dl.fiche dt:first-of-type,dl.fiche dt:first-of-type + dd{border-top:0}
+@media(max-width:560px){
+  dl.fiche{grid-template-columns:1fr}
+  dl.fiche dt{padding-bottom:0;border-top:1px solid var(--ligne-fine)}
+  dl.fiche dd{padding:2px 16px 10px;border-top:0}
+  dl.fiche dt:first-of-type + dd{border-top:0}
+}
+.journal{list-style:none;padding:14px 16px}
+.journal li{padding-left:20px;position:relative;padding-bottom:14px;border-left:2px solid var(--ligne);
+  margin-left:5px}
+.journal li:last-child{border-left-color:transparent;padding-bottom:0}
+.journal li::before{content:"";position:absolute;left:-7px;top:5px;width:12px;height:12px;
+  border-radius:50%;background:var(--azur);border:2px solid var(--craie)}
+.journal .quand{font-size:.76rem;color:var(--mousse);font-variant-numeric:tabular-nums}
+.journal .mot{font-size:.9rem;font-style:italic;color:var(--mousse);margin-top:2px}
+.note{background:#FFFDF5;border-left:3px solid var(--or-clair);padding:9px 12px;
+  border-radius:0 6px 6px 0;font-size:.9rem;margin-bottom:8px}
+.note .quand{font-size:.74rem;color:var(--mousse);display:block}
+
+/* ---------- messages ---------- */
+.msg{padding:11px 14px;border-radius:8px;font-size:.9rem;margin-bottom:14px}
+.msg.ok{background:var(--vert-fond);color:var(--vert);border:1px solid var(--vert)}
+.msg.ko{background:var(--rouge-fond);color:var(--rouge);border:1px solid var(--rouge)}
+.msg.info{background:var(--parterre);color:var(--buis);border:1px solid var(--ligne)}
+
+/* ---------- connexion ---------- */
+.connexion{max-width:420px;margin:11vh auto;background:var(--craie);border:1px solid var(--ligne-fine);
+  border-radius:var(--rayon);padding:28px 26px;box-shadow:var(--carte)}
+.connexion h1{font-size:1.35rem;margin-bottom:6px}
+.connexion p{color:var(--mousse);font-size:.92rem;margin-bottom:18px}
+.connexion input{width:100%;margin-bottom:12px}
+.connexion .b{width:100%;text-align:center}
+.chargement{text-align:center;padding:60px 20px;color:var(--mousse)}
+
+/* ---------- barre de progression des réseaux ---------- */
+.barres{display:grid;gap:11px}
+.barre .haut{display:flex;justify-content:space-between;font-size:.86rem;margin-bottom:4px}
+.barre .piste{height:9px;background:var(--parterre);border-radius:5px;overflow:hidden}
+.barre .part{height:100%;background:var(--azur);border-radius:5px}
+.barre.or .part{background:var(--or-clair)}
+</style>
+</head>
+<body>
+
+<!-- ══════════════ NON CONNECTÉE ══════════════ -->
+<section id="ecran-connexion" hidden>
+  <div class="connexion">
+    <h1>Pilotage IDF.immo</h1>
+    <p>Espace réservé. Indiquez votre adresse&nbsp;: un lien de connexion vous est envoyé, il n'y a pas de mot de passe.</p>
+    <form id="form-connexion" novalidate>
+      <input type="email" id="email" placeholder="contact@idf.immo" autocomplete="email" required>
+      <button class="b b-1" type="submit" id="envoyer">Recevoir mon lien</button>
+    </form>
+    <div id="msg-connexion"></div>
+  </div>
+</section>
+
+<!-- ══════════════ CHARGEMENT ══════════════ -->
+<section id="ecran-attente">
+  <p class="chargement">Un instant…</p>
+</section>
+
+<!-- ══════════════ CONNECTÉE ══════════════ -->
+<div id="ecran-app" hidden>
+  <header class="entete">
+    <div class="haut">
+      <span class="marque">app<span class="pt">.</span>idf<span class="pt">.</span>immo</span>
+      <span class="qui" id="qui"></span>
+      <button class="sortir" id="sortir">Quitter</button>
+    </div>
+    <nav class="rubriques" aria-label="Rubriques">
+      <div class="dedans" id="rubriques"></div>
+    </nav>
+  </header>
+  <main id="vue"></main>
+</div>
+
+<script src="base/config.js"></script>
+<script type="module">
+import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.58.0/+esm";
+
+const base = createClient(window.CONFIG_BASE.url, window.CONFIG_BASE.cle);
+const $ = (id) => document.getElementById(id);
+
+/* ------------------------------------------------------------------
+   Le vocabulaire. « Signalement » n'apparaît nulle part : opportunité.
+   ------------------------------------------------------------------ */
+const ETATS = {
+  recue:                ["Reçue",                "e-recue"],
+  qualifiee:            ["Qualifiée",            "e-encours"],
+  contact_en_cours:     ["Contact en cours",     "e-encours"],
+  projet_immobilier:    ["Projet immobilier",    "e-mandat"],
+  expertise_remise:     ["Expertise remise",     "e-mandat"],
+  vente_realisee:       ["Vente réalisée",       "e-vendue"],
+  prime_versee:         ["Prime versée",         "e-prime"],
+  deja_partagee:        ["Déjà partagée",        "e-close"],
+  deja_en_portefeuille: ["Déjà en portefeuille", "e-close"],
+  hors_zone:            ["Hors Île-de-France",   "e-close"],
+  sans_suite:           ["Sans suite",           "e-close"],
+  vendu_ailleurs:       ["Vendu ailleurs",       "e-close"]
+};
+// Les fins de parcours : un motif y est obligatoire, on ne classe jamais en silence.
+const SANS_SUITE = ["deja_partagee","deja_en_portefeuille","hors_zone","sans_suite","vendu_ailleurs"];
+const VIVANTES   = ["recue","qualifiee","contact_en_cours","projet_immobilier","expertise_remise"];
+
+const CATEGORIES = {
+  gardien:"Gardien", etudiant:"Étudiant", association:"Association",
+  nounou:"Nounou", autre:"Autre"
+};
+
+const RUBRIQUES = [
+  ["tableau",       "Tableau de bord"],
+  ["opportunites",  "Opportunités"],
+  ["prescripteurs", "Prescripteurs"],
+  ["prospects",     "Prospects"],
+  ["estimations",   "Estimations"],
+  ["mandats",       "Mandats"],
+  ["ventes",        "Ventes"],
+  ["primes",        "Primes"],
+  ["statistiques",  "Statistiques"],
+  ["parametres",    "Paramètres"]
+];
+
+/* ---------------- outils ---------------- */
+const ec = (s) => String(s == null ? "" : s)
+  .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+
+function date(v, heure){
+  if (!v) return "—";
+  const o = { day:"numeric", month:"short", year:"numeric" };
+  if (heure){ o.hour = "2-digit"; o.minute = "2-digit"; }
+  return new Date(v).toLocaleDateString("fr-FR", o);
+}
+const euros = (n) => (n == null ? "—" : Number(n).toLocaleString("fr-FR") + " €");
+const etat  = (s) => { const [l,c] = ETATS[s] || [s,"e-close"]; return `<span class="etat ${c}">${ec(l)}</span>`; };
+const montre = (id) => ["ecran-connexion","ecran-attente","ecran-app"].forEach(e => $(e).hidden = (e !== id));
+
+function dire(texte, genre){
+  const d = document.createElement("div");
+  d.className = "msg " + (genre || "info");
+  d.textContent = texte;
+  const v = $("vue");
+  v.insertBefore(d, v.firstChild);
+  d.scrollIntoView({block:"nearest"});
+  setTimeout(() => d.remove(), 6000);
+}
+
+/* ---------------- connexion ---------------- */
+$("form-connexion").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const email = $("email").value.trim();
+  const msg = $("msg-connexion"), bouton = $("envoyer");
+  if (!email || email.indexOf("@") < 1){
+    msg.innerHTML = '<div class="msg ko">Indiquez une adresse e-mail valide.</div>';
+    return;
+  }
+  bouton.disabled = true; bouton.textContent = "Envoi…";
+  const { error } = await base.auth.signInWithOtp({
+    email, options:{ emailRedirectTo: window.location.origin + window.location.pathname }
+  });
+  bouton.disabled = false; bouton.textContent = "Recevoir mon lien";
+  msg.innerHTML = error
+    ? '<div class="msg ko">L\'envoi a échoué. Réessayez dans un instant.</div>'
+    : '<div class="msg ok"><strong>C\'est envoyé.</strong> Ouvrez le message reçu à ' + ec(email) +
+      ' et cliquez sur le lien. S\'il n\'arrive pas, regardez dans les indésirables.</div>';
+});
+
+$("sortir").addEventListener("click", async () => {
+  await base.auth.signOut();
+  location.href = location.pathname;
+});
+
+/* ---------------- état de l'application ---------------- */
+let MOI = null;         // le compte connecté
+let RESEAUX = [];       // catalogue des réseaux
+let RUBRIQUE = "tableau";
+let DETAIL = null;      // { quoi:"opportunite"|"prescripteur", id }
+
+/* ---------------- démarrage ---------------- */
+base.auth.onAuthStateChange((_, session) => { if (session) demarrer(session); });
+
+(async () => {
+  const { data:{ session } } = await base.auth.getSession();
+  if (session) demarrer(session); else montre("ecran-connexion");
+})();
+
+async function demarrer(session){
+  MOI = session.user;
+  // Seuls les comptes inscrits comme administrateurs entrent ici. Ce n'est pas
+  // la page qui le décide : la base refuse tout le reste.
+  const { data: admin } = await base.from("administrateurs").select("*").eq("id", MOI.id).maybeSingle();
+  if (!admin){
+    montre("ecran-connexion");
+    $("msg-connexion").innerHTML =
+      '<div class="msg ko">Ce compte n\'a pas accès au pilotage. Il faut être inscrit comme administrateur.</div>';
+    await base.auth.signOut();
+    return;
+  }
+  $("qui").textContent = admin.nom || MOI.email;
+  const { data: r } = await base.from("reseaux").select("*").order("nom");
+  RESEAUX = r || [];
+
+  $("rubriques").innerHTML = RUBRIQUES.map(([cle, lib]) =>
+    `<button data-r="${cle}">${ec(lib)}</button>`).join("");
+  $("rubriques").addEventListener("click", (e) => {
+    const b = e.target.closest("button[data-r]");
+    if (!b) return;
+    RUBRIQUE = b.dataset.r; DETAIL = null; peindre();
+  });
+
+  montre("ecran-app");
+  peindre();
+}
+
+function peindre(){
+  document.querySelectorAll("#rubriques button").forEach(b => {
+    if (b.dataset.r === RUBRIQUE) b.setAttribute("aria-current","page");
+    else b.removeAttribute("aria-current");
+  });
+  $("vue").innerHTML = '<p class="chargement">Un instant…</p>';
+  const suite = {
+    tableau, opportunites, prescripteurs, prospects, estimations,
+    mandats, ventes, primes, statistiques, parametres
+  }[RUBRIQUE];
+  suite().catch(rate);
+  window.scrollTo(0,0);
+}
+
+function rate(e){
+  console.error(e);
+  $("vue").innerHTML = '<div class="msg ko">Le chargement a échoué : ' + ec(e.message || e) +
+    '</div><p class="sous">Si le message parle de « permission denied », c\'est qu\'une autorisation manque dans la base.</p>';
+}
+
+const nomReseau = (id) => (RESEAUX.find(r => r.id === id) || {}).nom || "—";
+
+/* ══════════════════ TABLEAU DE BORD ══════════════════ */
+async function tableau(){
+  const [opp, pr, ve] = await Promise.all([
+    base.from("opportunites").select("*").order("partagee_le",{ascending:false}),
+    base.from("primes").select("*"),
+    base.from("ventes").select("*")
+  ]);
+  const o = opp.data || [], primes = pr.data || [], ventes = ve.data || [];
+  const aQualifier = o.filter(x => x.statut === "recue");
+  const enCours    = o.filter(x => VIVANTES.includes(x.statut));
+  const aVerser    = primes.filter(p => p.statut === "a_verser");
+  const annee      = new Date().getFullYear();
+  const verseesAn  = primes.filter(p => p.statut === "versee" && p.versee_le &&
+                                   new Date(p.versee_le).getFullYear() === annee);
+  const totalAn    = verseesAn.reduce((s,p) => s + (p.montant_euros||0), 0);
+
+  $("vue").innerHTML = `
+    <h1>Tableau de bord</h1>
+    <p class="sous">Tous réseaux confondus.</p>
+    <div class="compteurs">
+      <div class="compteur"><span class="val">${aQualifier.length}</span><span class="lib">à qualifier</span></div>
+      <div class="compteur"><span class="val">${enCours.length}</span><span class="lib">en cours</span></div>
+      <div class="compteur"><span class="val">${o.length}</span><span class="lib">opportunités</span></div>
+      <div class="compteur"><span class="val">${ventes.filter(v=>v.acte_le).length}</span><span class="lib">ventes actées</span></div>
+      <div class="compteur or"><span class="val">${aVerser.length}</span><span class="lib">primes à verser</span></div>
+      <div class="compteur or"><span class="val">${euros(totalAn)}</span><span class="lib">versé en ${annee}</span></div>
+    </div>
+
+    <h2>À qualifier — répondre sous 24 heures</h2>
+    ${aQualifier.length ? tableOpportunites(aQualifier) :
+      '<div class="bloc"><p class="vide">Rien en attente. Tout est traité.</p></div>'}
+
+    <h2>Primes à verser</h2>
+    ${aVerser.length ? tablePrimes(aVerser) :
+      '<div class="bloc"><p class="vide">Aucune prime en attente de virement.</p></div>'}
+  `;
+  brancherLignes();
+}
+
+/* ══════════════════ OPPORTUNITÉS ══════════════════ */
+let fReseau = "", fStatut = "";
+
+function tableOpportunites(liste){
+  return `<div class="bloc"><div class="tableau"><table>
+    <thead><tr>
+      <th>Référence</th><th>Bien</th><th>Réseau</th><th>Partagée</th><th>État</th>
+    </tr></thead><tbody>
+    ${liste.map(o => `<tr class="cliquable" data-opp="${ec(o.id)}">
+      <td class="num"><strong>${ec(o.reference)}</strong></td>
+      <td>${ec(o.adresse_saisie)}${o.commune ? '<br><span class="sous" style="font-size:.82rem">'+ec(o.commune)+'</span>' : ''}</td>
+      <td><span class="cat">${ec(CATEGORIES[o.categorie] || o.categorie || "—")}</span></td>
+      <td class="num">${date(o.partagee_le)}</td>
+      <td>${etat(o.statut)}</td>
+    </tr>`).join("")}
+    </tbody></table></div></div>`;
+}
+
+async function opportunites(){
+  if (DETAIL && DETAIL.quoi === "opportunite") return ficheOpportunite(DETAIL.id);
+  let q = base.from("opportunites").select("*").order("partagee_le",{ascending:false});
+  if (fReseau) q = q.eq("reseau_id", fReseau);
+  if (fStatut) q = q.eq("statut", fStatut);
+  const { data, error } = await q;
+  if (error) throw error;
+
+  $("vue").innerHTML = `
+    <h1>Opportunités</h1>
+    <p class="sous">${(data||[]).length} opportunité(s) affichée(s).</p>
+    <div class="filtres">
+      <select id="f-reseau"><option value="">Tous les réseaux</option>
+        ${RESEAUX.map(r => `<option value="${ec(r.id)}"${r.id===fReseau?" selected":""}>${ec(r.nom)}</option>`).join("")}
+      </select>
+      <select id="f-statut"><option value="">Tous les états</option>
+        ${Object.entries(ETATS).map(([k,v]) => `<option value="${k}"${k===fStatut?" selected":""}>${ec(v[0])}</option>`).join("")}
+      </select>
+    </div>
+    ${(data||[]).length ? tableOpportunites(data) :
+      '<div class="bloc"><p class="vide">Aucune opportunité avec ces filtres.</p></div>'}
+  `;
+  $("f-reseau").addEventListener("change", e => { fReseau = e.target.value; peindre(); });
+  $("f-statut").addEventListener("change", e => { fStatut = e.target.value; peindre(); });
+  brancherLignes();
+}
+
+function brancherLignes(){
+  $("vue").querySelectorAll("tr[data-opp]").forEach(tr =>
+    tr.addEventListener("click", () => { DETAIL = {quoi:"opportunite", id:tr.dataset.opp};
+      RUBRIQUE = "opportunites"; peindre(); }));
+  $("vue").querySelectorAll("tr[data-pres]").forEach(tr =>
+    tr.addEventListener("click", () => { DETAIL = {quoi:"prescripteur", id:tr.dataset.pres};
+      RUBRIQUE = "prescripteurs"; peindre(); }));
+}
+
+async function ficheOpportunite(id){
+  const [{ data:o }, { data:ev }, { data:notes }] = await Promise.all([
+    base.from("opportunites").select("*").eq("id", id).maybeSingle(),
+    base.from("evenements").select("*").eq("opportunite_id", id).order("cree_le",{ascending:true}),
+    base.from("notes_internes").select("*").eq("opportunite_id", id).order("cree_le",{ascending:false})
+  ]);
+  if (!o){ $("vue").innerHTML = '<div class="msg ko">Opportunité introuvable.</div>'; return; }
+  const { data:p } = await base.from("prescripteurs").select("*").eq("id", o.prescripteur_id).maybeSingle();
+  // Le filet anti-prime-oubliée : qui d'autre a partagé ce bien ?
+  const { data:memeBien } = await base.from("opportunites")
+    .select("reference,partagee_le,statut").eq("cle_bien", o.cle_bien).order("partagee_le");
+
+  const qui = p ? (([p.prenom, p.nom].filter(Boolean).join(" ") || p.email)) : "—";
+
+  $("vue").innerHTML = `
+    <button class="retour" id="retour">← Toutes les opportunités</button>
+    <h1>${ec(o.reference)}</h1>
+    <p class="sous">${ec(o.adresse_saisie)}</p>
+
+    <div class="bloc">
+      <div class="bloc-tete"><h3>Faire avancer</h3></div>
+      <div style="padding:14px 16px">
+        <div class="grille2">
+          <label class="champ"><span>Nouvel état</span>
+            <select id="n-statut">
+              ${Object.entries(ETATS).map(([k,v]) =>
+                `<option value="${k}"${k===o.statut?" selected":""}>${ec(v[0])}</option>`).join("")}
+            </select>
+          </label>
+          <label class="champ"><span>Dernier contact avec le propriétaire</span>
+            <input type="date" id="n-contact">
+          </label>
+        </div>
+        <label class="champ"><span>Message pour le prescripteur — il le lira</span>
+          <textarea id="n-message" placeholder="Ex. : j'ai eu M. Durand au téléphone, il souhaite qu'on se revoie en septembre."></textarea>
+        </label>
+        <p class="sous" id="avert-motif" style="margin-bottom:10px"></p>
+        <button class="b b-1" id="enregistrer">Enregistrer l'avancement</button>
+      </div>
+    </div>
+
+    <div class="bloc">
+      <div class="bloc-tete"><h3>La fiche</h3><div class="droite">${etat(o.statut)}</div></div>
+      <dl class="fiche">
+        <dt>Prescripteur</dt><dd><a href="#" id="lien-pres">${ec(qui)}</a>
+          <span class="cat">${ec(CATEGORIES[o.categorie] || "—")}</span></dd>
+        <dt>Réseau</dt><dd>${ec(nomReseau(o.reseau_id))}</dd>
+        <dt>Partagée le</dt><dd>${date(o.partagee_le, true)}</dd>
+        <dt>Valable jusqu'au</dt><dd>${date(o.expire_le)}${new Date(o.expire_le) < new Date() ? ' <span class="etat e-close">expirée</span>' : ''}</dd>
+        <dt>Bien</dt><dd>${ec([o.type_bien, o.batiment && "bât. "+o.batiment, o.escalier && "esc. "+o.escalier, o.etage && "étage "+o.etage].filter(Boolean).join(" · ") || "—")}</dd>
+        <dt>Commune</dt><dd>${ec([o.commune, o.code_postal].filter(Boolean).join(" ") || "—")}</dd>
+        <dt>Propriétaire</dt><dd>${ec(o.proprietaire_nom || "—")}${o.proprietaire_tel ? ' — <a href="tel:'+ec(o.proprietaire_tel)+'">'+ec(o.proprietaire_tel)+'</a>' : ''}</dd>
+        <dt>Accord recueilli</dt><dd>${o.accord_atteste ? "Oui" : "<strong>Non</strong>"}</dd>
+        <dt>Peut-on citer le prescripteur&nbsp;?</dt><dd>${o.citation_autorisee ? "Oui" : "<strong>Non — ne jamais le nommer</strong>"}</dd>
+        <dt>A donné notre numéro</dt><dd>${o.numero_transmis ? "Oui — il peut appeler de lui-même" : "Non"}</dd>
+        <dt>Ce qu'il sait</dt><dd>${ec(o.details || "—")}</dd>
+        <dt>Motif</dt><dd>${ec(o.motif || "—")}</dd>
+      </dl>
+    </div>
+
+    ${memeBien && memeBien.length > 1 ? `
+    <div class="bloc">
+      <div class="bloc-tete"><h3>Ce bien a été partagé ${memeBien.length} fois</h3></div>
+      <div class="tableau"><table>
+        <thead><tr><th>Référence</th><th>Partagée</th><th>État</th></tr></thead>
+        <tbody>${memeBien.map(m => `<tr><td class="num">${ec(m.reference)}${m.reference===o.reference?" ←":""}</td>
+          <td class="num">${date(m.partagee_le)}</td><td>${etat(m.statut)}</td></tr>`).join("")}</tbody>
+      </table></div>
+      <p class="vide" style="padding:12px 16px;text-align:left">La première enregistrée est celle qui ouvre droit à la prime.</p>
+    </div>` : ""}
+
+    <div class="bloc">
+      <div class="bloc-tete"><h3>Journal — visible par le prescripteur</h3></div>
+      ${(ev||[]).length ? `<ul class="journal">${ev.map(e => `<li>
+        <div>${etat(e.statut)}</div>
+        <div class="quand">${date(e.cree_le, true)}</div>
+        ${e.message ? '<div class="mot">« '+ec(e.message)+' »</div>' : ''}
+      </li>`).join("")}</ul>` : '<p class="vide">Rien encore.</p>'}
+    </div>
+
+    <div class="bloc">
+      <div class="bloc-tete"><h3>Notes internes — jamais visibles</h3></div>
+      <div style="padding:14px 16px">
+        ${(notes||[]).map(n => `<div class="note"><span class="quand">${date(n.cree_le, true)}</span>${ec(n.note)}</div>`).join("")}
+        <label class="champ"><span>Ajouter une note</span>
+          <textarea id="n-note" placeholder="Pour vous seule."></textarea>
+        </label>
+        <button class="b" id="ajouter-note">Ajouter la note</button>
+      </div>
+    </div>
+  `;
+
+  $("retour").addEventListener("click", () => { DETAIL = null; peindre(); });
+  $("lien-pres").addEventListener("click", (e) => {
+    e.preventDefault();
+    if (p){ DETAIL = {quoi:"prescripteur", id:p.id}; RUBRIQUE = "prescripteurs"; peindre(); }
+  });
+
+  const prevenir = () => {
+    $("avert-motif").textContent = SANS_SUITE.includes($("n-statut").value)
+      ? "Cet état met fin au parcours sans prime : le message ci-dessus servira de motif, et le prescripteur le lira. Dites-lui pourquoi."
+      : "";
+  };
+  $("n-statut").addEventListener("change", prevenir); prevenir();
+
+  $("enregistrer").addEventListener("click", async () => {
+    const b = $("enregistrer"); b.disabled = true;
+    const statut = $("n-statut").value, message = $("n-message").value.trim();
+    if (SANS_SUITE.includes(statut) && !message){
+      dire("Un motif est obligatoire pour clore une opportunité. Écrivez-le dans le message.", "ko");
+      b.disabled = false; return;
+    }
+    const modif = { statut };
+    if (message) modif.motif = message;
+    if ($("n-contact").value) modif.dernier_contact_le = $("n-contact").value;
+    const { error } = await base.from("opportunites").update(modif).eq("id", id);
+    b.disabled = false;
+    if (error) return dire("Échec : " + error.message, "ko");
+    dire("Avancement enregistré. Le prescripteur le verra dans son espace.", "ok");
+    peindre();
+  });
+
+  $("ajouter-note").addEventListener("click", async () => {
+    const note = $("n-note").value.trim();
+    if (!note) return;
+    const { error } = await base.from("notes_internes")
+      .insert({ opportunite_id:id, note, cree_par:MOI.id });
+    if (error) return dire("Échec : " + error.message, "ko");
+    peindre();
+  });
+}
+
+/* ══════════════════ PRESCRIPTEURS ══════════════════ */
+let fCat = "";
+
+async function prescripteurs(){
+  if (DETAIL && DETAIL.quoi === "prescripteur") return fichePrescripteur(DETAIL.id);
+  let q = base.from("prescripteurs").select("*").order("cree_le",{ascending:false});
+  if (fCat) q = q.eq("categorie", fCat);
+  const { data, error } = await q;
+  if (error) throw error;
+  const { data: opps } = await base.from("opportunites").select("prescripteur_id");
+  const compte = {};
+  (opps||[]).forEach(o => compte[o.prescripteur_id] = (compte[o.prescripteur_id]||0) + 1);
+
+  $("vue").innerHTML = `
+    <h1>Prescripteurs</h1>
+    <p class="sous">${(data||[]).length} personne(s). Un seul système, toutes catégories confondues.</p>
+    <div class="filtres">
+      <select id="f-cat"><option value="">Toutes les catégories</option>
+        ${Object.entries(CATEGORIES).map(([k,v]) =>
+          `<option value="${k}"${k===fCat?" selected":""}>${ec(v)}</option>`).join("")}
+      </select>
+    </div>
+    ${(data||[]).length ? `<div class="bloc"><div class="tableau"><table>
+      <thead><tr><th>Nom</th><th>Catégorie</th><th>Contact</th><th>Où</th><th>Opportunités</th></tr></thead>
+      <tbody>${data.map(p => `<tr class="cliquable" data-pres="${ec(p.id)}">
+        <td><strong>${ec([p.prenom,p.nom].filter(Boolean).join(" ") || p.email)}</strong>
+          ${p.organisation ? '<br><span style="font-size:.82rem;color:var(--mousse)">'+ec(p.organisation)+'</span>' : ''}</td>
+        <td><span class="cat">${ec(CATEGORIES[p.categorie]||p.categorie)}</span></td>
+        <td>${ec(p.email)}${p.telephone ? '<br>'+ec(p.telephone) : ''}</td>
+        <td>${ec([p.residence, p.commune].filter(Boolean).join(", ") || "—")}</td>
+        <td class="num">${compte[p.id] || 0}</td>
+      </tr>`).join("")}</tbody></table></div></div>`
+      : '<div class="bloc"><p class="vide">Aucun prescripteur pour l\'instant.</p></div>'}
+  `;
+  $("f-cat").addEventListener("change", e => { fCat = e.target.value; peindre(); });
+  brancherLignes();
+}
+
+async function fichePrescripteur(id){
+  const [{ data:p }, { data:opps }, { data:prs }] = await Promise.all([
+    base.from("prescripteurs").select("*").eq("id", id).maybeSingle(),
+    base.from("opportunites").select("*").eq("prescripteur_id", id).order("partagee_le",{ascending:false}),
+    base.from("primes").select("*").eq("prescripteur_id", id).order("cree_le",{ascending:false})
+  ]);
+  if (!p){ $("vue").innerHTML = '<div class="msg ko">Prescripteur introuvable.</div>'; return; }
+  const annee = new Date().getFullYear();
+  const cumul = (prs||[]).filter(x => x.statut==="versee" && x.versee_le &&
+                 new Date(x.versee_le).getFullYear()===annee)
+                .reduce((s,x)=>s+(x.montant_euros||0),0);
+
+  $("vue").innerHTML = `
+    <button class="retour" id="retour">← Tous les prescripteurs</button>
+    <h1>${ec([p.prenom,p.nom].filter(Boolean).join(" ") || p.email)}</h1>
+    <p class="sous">${ec(CATEGORIES[p.categorie]||p.categorie)} · ${ec(nomReseau(p.reseau_id))}</p>
+
+    <div class="compteurs">
+      <div class="compteur"><span class="val">${(opps||[]).length}</span><span class="lib">opportunités</span></div>
+      <div class="compteur"><span class="val">${(opps||[]).filter(o=>o.statut==="vente_realisee"||o.statut==="prime_versee").length}</span><span class="lib">ventes</span></div>
+      <div class="compteur or"><span class="val">${euros(cumul)}</span><span class="lib">reçu en ${annee}</span></div>
+    </div>
+
+    <div class="bloc">
+      <div class="bloc-tete"><h3>Coordonnées</h3></div>
+      <dl class="fiche">
+        <dt>E-mail</dt><dd><a href="mailto:${ec(p.email)}">${ec(p.email)}</a></dd>
+        <dt>Téléphone</dt><dd>${p.telephone ? '<a href="tel:'+ec(p.telephone)+'">'+ec(p.telephone)+'</a>' : "—"}</dd>
+        <dt>Organisation</dt><dd>${ec(p.organisation || "—")}${p.role_dans_organisation ? " — "+ec(p.role_dans_organisation) : ""}</dd>
+        <dt>Résidence</dt><dd>${ec(p.residence || "—")}</dd>
+        <dt>Commune</dt><dd>${ec(p.commune || "—")}</dd>
+        <dt>IBAN</dt><dd>${p.iban ? ec(p.iban) : '<span style="color:var(--mousse)">non fourni — à demander avant le premier virement</span>'}</dd>
+        <dt>Inscrit le</dt><dd>${date(p.cree_le)}</dd>
+      </dl>
+    </div>
+
+    ${cumul >= 1500 ? '<div class="msg info">Cumul élevé cette année : pensez à lui rappeler que l\'activité peut devoir être déclarée comme indépendante.</div>' : ""}
+
+    <h2>Ses opportunités</h2>
+    ${(opps||[]).length ? tableOpportunites(opps) : '<div class="bloc"><p class="vide">Aucune.</p></div>'}
+
+    <h2>Ses primes</h2>
+    ${(prs||[]).length ? tablePrimes(prs) : '<div class="bloc"><p class="vide">Aucune.</p></div>'}
+  `;
+  $("retour").addEventListener("click", () => { DETAIL = null; peindre(); });
+  brancherLignes();
+}
+
+/* ══════════════════ PROSPECTS ══════════════════ */
+async function prospects(){
+  const { data, error } = await base.from("prospects").select("*").order("partagee_le",{ascending:false});
+  if (error) throw error;
+  $("vue").innerHTML = `
+    <h1>Prospects</h1>
+    <p class="sous">Les propriétaires dont les coordonnées nous ont été transmises, avec leur accord.</p>
+    ${(data||[]).length ? `<div class="bloc"><div class="tableau"><table>
+      <thead><tr><th>Nom</th><th>Téléphone</th><th>Commune</th><th>Accord</th><th>Opportunité</th><th>État</th></tr></thead>
+      <tbody>${data.map(x => `<tr>
+        <td><strong>${ec(x.nom || "—")}</strong></td>
+        <td>${x.telephone ? '<a href="tel:'+ec(x.telephone)+'">'+ec(x.telephone)+'</a>' : "—"}</td>
+        <td>${ec(x.commune || "—")}</td>
+        <td>${x.accord_recueilli ? "Oui" : '<strong style="color:var(--rouge)">Non</strong>'}</td>
+        <td class="num">${ec(x.reference)}</td>
+        <td>${etat(x.statut)}</td>
+      </tr>`).join("")}</tbody></table></div></div>`
+      : '<div class="bloc"><p class="vide">Aucun prospect enregistré.</p></div>'}
+    <p class="sous">Ces coordonnées ne servent qu'une fois. Si la personne ne donne pas suite, on ne rappelle pas et on ne conserve rien.</p>
+  `;
+}
+
+/* ══════════════════ ESTIMATIONS / MANDATS / VENTES ══════════════════ */
+function selectOpportunite(id, liste){
+  return `<label class="champ"><span>Opportunité</span><select id="${id}">
+    <option value="">— aucune —</option>
+    ${liste.map(o => `<option value="${ec(o.id)}">${ec(o.reference)} — ${ec(o.adresse_saisie)}</option>`).join("")}
+  </select></label>`;
+}
+
+async function estimations(){
+  const [{ data }, { data:opps }] = await Promise.all([
+    base.from("estimations").select("*").order("cree_le",{ascending:false}),
+    base.from("opportunites").select("id,reference,adresse_saisie").order("partagee_le",{ascending:false})
+  ]);
+  $("vue").innerHTML = `
+    <h1>Estimations</h1>
+    <p class="sous">L'expertise en valeur vénale peut ouvrir droit à une rémunération <strong>même sans vente</strong> — réseau associations.</p>
+    <div class="bloc">
+      <div class="bloc-tete"><h3>Enregistrer une estimation</h3></div>
+      <div style="padding:14px 16px">
+        ${selectOpportunite("e-opp", opps||[])}
+        <div class="grille2">
+          <label class="champ"><span>Type</span><select id="e-type">
+            <option value="avis_valeur">Avis de valeur</option>
+            <option value="expertise_valeur_venale">Expertise en valeur vénale</option>
+          </select></label>
+          <label class="champ"><span>Valeur estimée (€)</span><input type="number" id="e-valeur" min="0" step="1000"></label>
+          <label class="champ"><span>Rapport remis le</span><input type="date" id="e-remise"></label>
+          <label class="champ"><span>Réglée le</span><input type="date" id="e-reglee"></label>
+          <label class="champ"><span>Honoraires nets (€)</span><input type="number" id="e-hono" min="0" step="10"></label>
+        </div>
+        <button class="b b-1" id="e-ajouter">Enregistrer</button>
+      </div>
+    </div>
+    ${(data||[]).length ? `<div class="bloc"><div class="tableau"><table>
+      <thead><tr><th>Type</th><th>Valeur</th><th>Remise</th><th>Réglée</th><th>Honoraires nets</th></tr></thead>
+      <tbody>${data.map(x => `<tr>
+        <td>${x.type==="expertise_valeur_venale" ? "<strong>Expertise valeur vénale</strong>" : "Avis de valeur"}</td>
+        <td class="num">${euros(x.valeur_euros)}</td>
+        <td class="num">${date(x.remise_le)}</td>
+        <td class="num">${date(x.reglee_le)}</td>
+        <td class="num">${euros(x.honoraires_nets)}</td>
+      </tr>`).join("")}</tbody></table></div></div>` :
+      '<div class="bloc"><p class="vide">Aucune estimation enregistrée.</p></div>'}
+  `;
+  $("e-ajouter").addEventListener("click", async () => {
+    const l = {
+      opportunite_id: $("e-opp").value || null,
+      type: $("e-type").value,
+      valeur_euros: $("e-valeur").value || null,
+      remise_le: $("e-remise").value || null,
+      reglee_le: $("e-reglee").value || null,
+      honoraires_nets: $("e-hono").value || null
+    };
+    const { error } = await base.from("estimations").insert(l);
+    if (error) return dire("Échec : " + error.message, "ko");
+    dire("Estimation enregistrée.", "ok"); peindre();
+  });
+}
+
+async function mandats(){
+  const [{ data }, { data:opps }] = await Promise.all([
+    base.from("mandats").select("*").order("cree_le",{ascending:false}),
+    base.from("opportunites").select("id,reference,adresse_saisie").order("partagee_le",{ascending:false})
+  ]);
+  $("vue").innerHTML = `
+    <h1>Mandats</h1>
+    <p class="sous">Un mandat exclusif avec diagnostics réalisés déclenche les 50 € du réseau étudiants.</p>
+    <div class="bloc">
+      <div class="bloc-tete"><h3>Enregistrer un mandat</h3></div>
+      <div style="padding:14px 16px">
+        ${selectOpportunite("m-opp", opps||[])}
+        <div class="grille2">
+          <label class="champ"><span>Type</span><select id="m-type">
+            <option value="vente">Mandat de vente</option>
+            <option value="recherche">Mandat de recherche</option>
+          </select></label>
+          <label class="champ"><span>Exclusif&nbsp;?</span><select id="m-excl">
+            <option value="false">Non</option><option value="true">Oui</option>
+          </select></label>
+          <label class="champ"><span>Diagnostics réalisés&nbsp;?</span><select id="m-diag">
+            <option value="false">Non</option><option value="true">Oui</option>
+          </select></label>
+          <label class="champ"><span>Signé le</span><input type="date" id="m-signe"></label>
+        </div>
+        <button class="b b-1" id="m-ajouter">Enregistrer</button>
+      </div>
+    </div>
+    ${(data||[]).length ? `<div class="bloc"><div class="tableau"><table>
+      <thead><tr><th>Type</th><th>Exclusif</th><th>Diagnostics</th><th>Signé</th></tr></thead>
+      <tbody>${data.map(x => `<tr>
+        <td>${x.type==="recherche" ? "Recherche" : "Vente"}</td>
+        <td>${x.exclusif ? "<strong>Oui</strong>" : "Non"}</td>
+        <td>${x.diagnostics_faits ? "Oui" : "Non"}</td>
+        <td class="num">${date(x.signe_le)}</td>
+      </tr>`).join("")}</tbody></table></div></div>` :
+      '<div class="bloc"><p class="vide">Aucun mandat enregistré.</p></div>'}
+  `;
+  $("m-ajouter").addEventListener("click", async () => {
+    const l = {
+      opportunite_id: $("m-opp").value || null,
+      type: $("m-type").value,
+      exclusif: $("m-excl").value === "true",
+      diagnostics_faits: $("m-diag").value === "true",
+      signe_le: $("m-signe").value || null
+    };
+    const { error } = await base.from("mandats").insert(l);
+    if (error) return dire("Échec : " + error.message, "ko");
+    dire("Mandat enregistré.", "ok"); peindre();
+  });
+}
+
+async function ventes(){
+  const [{ data }, { data:opps }] = await Promise.all([
+    base.from("ventes").select("*").order("cree_le",{ascending:false}),
+    base.from("opportunites").select("id,reference,adresse_saisie").order("partagee_le",{ascending:false})
+  ]);
+  $("vue").innerHTML = `
+    <h1>Ventes</h1>
+    <p class="sous">C'est la <strong>signature de l'acte authentique</strong> qui ouvre droit à la prime — pas le compromis.</p>
+    <div class="bloc">
+      <div class="bloc-tete"><h3>Enregistrer une vente</h3></div>
+      <div style="padding:14px 16px">
+        ${selectOpportunite("v-opp", opps||[])}
+        <div class="grille2">
+          <label class="champ"><span>Compromis le</span><input type="date" id="v-compromis"></label>
+          <label class="champ"><span>Acte authentique le</span><input type="date" id="v-acte"></label>
+          <label class="champ"><span>Prix de vente (€)</span><input type="number" id="v-prix" min="0" step="1000"></label>
+          <label class="champ"><span>Honoraires bruts (€)</span><input type="number" id="v-brut" min="0" step="100"></label>
+          <label class="champ"><span>Honoraires NETS (€)</span><input type="number" id="v-net" min="0" step="100"></label>
+        </div>
+        <p class="sous">Les honoraires nets sont ceux que vous percevez réellement, après TVA et après la part du réseau mandant. C'est l'assiette des associations.</p>
+        <button class="b b-1" id="v-ajouter">Enregistrer la vente</button>
+      </div>
+    </div>
+    ${(data||[]).length ? `<div class="bloc"><div class="tableau"><table>
+      <thead><tr><th>Acte</th><th>Prix</th><th>Honoraires bruts</th><th>Honoraires nets</th><th></th></tr></thead>
+      <tbody>${data.map(x => `<tr>
+        <td class="num">${date(x.acte_le)}</td>
+        <td class="num">${euros(x.prix_euros)}</td>
+        <td class="num">${euros(x.honoraires_bruts)}</td>
+        <td class="num"><strong>${euros(x.honoraires_nets)}</strong></td>
+        <td><button class="b b-petit b-or" data-prime="${ec(x.id)}">Calculer la prime</button></td>
+      </tr>`).join("")}</tbody></table></div></div>` :
+      '<div class="bloc"><p class="vide">Aucune vente enregistrée.</p></div>'}
+  `;
+  $("v-ajouter").addEventListener("click", async () => {
+    const l = {
+      opportunite_id: $("v-opp").value || null,
+      compromis_le: $("v-compromis").value || null,
+      acte_le: $("v-acte").value || null,
+      prix_euros: $("v-prix").value || null,
+      honoraires_bruts: $("v-brut").value || null,
+      honoraires_nets: $("v-net").value || null
+    };
+    const { error } = await base.from("ventes").insert(l);
+    if (error) return dire("Échec : " + error.message, "ko");
+    dire("Vente enregistrée. Utilisez « Calculer la prime » pour la préparer.", "ok");
+    peindre();
+  });
+  $("vue").querySelectorAll("button[data-prime]").forEach(b =>
+    b.addEventListener("click", () => calculerPrime(b.dataset.prime)));
+}
+
+/* La prime n'est jamais calculée par une formule cachée : on lit la règle du
+   réseau, on montre le résultat, et on demande confirmation. */
+async function calculerPrime(venteId){
+  const { data:v } = await base.from("ventes").select("*").eq("id", venteId).maybeSingle();
+  if (!v || !v.opportunite_id) return dire("Cette vente n'est rattachée à aucune opportunité : impossible de savoir à qui verser.", "ko");
+  if (!v.acte_le) return dire("Sans date d'acte authentique, la prime n'est pas due.", "ko");
+  const { data:o } = await base.from("opportunites").select("*").eq("id", v.opportunite_id).maybeSingle();
+  const { data:regles } = await base.from("regles_remuneration").select("*")
+    .eq("reseau_id", o.reseau_id).eq("declencheur","acte_authentique").eq("actif", true);
+  if (!regles || !regles.length) return dire("Aucune règle de rémunération active pour ce réseau.", "ko");
+  const r = regles[0];
+
+  let montant, exact = null;
+  if (r.mode === "forfait"){ montant = r.montant_euros; }
+  else {
+    const assiette = r.assiette === "honoraires_bruts" ? v.honoraires_bruts : v.honoraires_nets;
+    if (!assiette) return dire("Renseignez les honoraires nets de cette vente pour calculer le pourcentage.", "ko");
+    exact = Math.round(Number(assiette) * Number(r.taux_pourcent)) / 100;
+    montant = Math.round(exact);
+  }
+  const ok = confirm(`Règle appliquée : ${r.libelle}\n\nPrime : ${montant} €` +
+    (exact !== null ? ` (exactement ${exact} €)` : "") + `\n\nCréer cette prime ?`);
+  if (!ok) return;
+
+  const { error } = await base.from("primes").insert({
+    opportunite_id: o.id, prescripteur_id: o.prescripteur_id, reseau_id: o.reseau_id,
+    regle_id: r.id, vente_id: v.id, montant_euros: montant, montant_exact: exact,
+    statut: "a_verser", acte_le: v.acte_le
+  });
+  if (error) return dire("Échec : " + error.message, "ko");
+  await base.from("opportunites").update({ statut:"vente_realisee" }).eq("id", o.id);
+  dire("Prime créée et opportunité passée en « vente réalisée ».", "ok");
+  RUBRIQUE = "primes"; peindre();
+}
+
+/* ══════════════════ PRIMES ══════════════════ */
+function tablePrimes(liste){
+  return `<div class="bloc"><div class="tableau"><table>
+    <thead><tr><th>Montant</th><th>État</th><th>Acte</th><th>Versée</th><th></th></tr></thead>
+    <tbody>${liste.map(p => `<tr>
+      <td class="num"><strong style="color:var(--or)">${euros(p.montant_euros)}</strong></td>
+      <td>${p.statut==="versee" ? '<span class="etat e-prime">Versée</span>' :
+           p.statut==="a_verser" ? '<span class="etat e-vendue">À verser</span>' :
+           '<span class="etat e-close">À venir</span>'}</td>
+      <td class="num">${date(p.acte_le)}</td>
+      <td class="num">${date(p.versee_le)}</td>
+      <td>${p.statut!=="versee" ? `<button class="b b-petit b-or" data-verser="${ec(p.id)}">Marquer versée</button>` : ""}</td>
+    </tr>`).join("")}</tbody></table></div></div>`;
+}
+
+async function primes(){
+  const { data, error } = await base.from("primes").select("*").order("cree_le",{ascending:false});
+  if (error) throw error;
+  const aVerser = (data||[]).filter(p => p.statut === "a_verser");
+  $("vue").innerHTML = `
+    <h1>Primes</h1>
+    <p class="sous">Versement par virement dans les 15 jours suivant la signature de l'acte.</p>
+    <div class="compteurs">
+      <div class="compteur or"><span class="val">${aVerser.length}</span><span class="lib">à verser</span></div>
+      <div class="compteur or"><span class="val">${euros(aVerser.reduce((s,p)=>s+(p.montant_euros||0),0))}</span><span class="lib">montant en attente</span></div>
+    </div>
+    ${(data||[]).length ? tablePrimes(data) : '<div class="bloc"><p class="vide">Aucune prime pour l\'instant.</p></div>'}
+  `;
+  $("vue").querySelectorAll("button[data-verser]").forEach(b =>
+    b.addEventListener("click", async () => {
+      const quand = prompt("Date du virement (AAAA-MM-JJ) :", new Date().toISOString().slice(0,10));
+      if (!quand) return;
+      const { data:p } = await base.from("primes").select("opportunite_id").eq("id", b.dataset.verser).maybeSingle();
+      const { error } = await base.from("primes")
+        .update({ statut:"versee", versee_le:quand }).eq("id", b.dataset.verser);
+      if (error) return dire("Échec : " + error.message, "ko");
+      if (p && p.opportunite_id){
+        await base.from("opportunites").update({ statut:"prime_versee" }).eq("id", p.opportunite_id);
+      }
+      dire("Prime marquée versée. Le prescripteur le voit dans son espace.", "ok");
+      peindre();
+    }));
+}
+
+/* ══════════════════ STATISTIQUES ══════════════════ */
+async function statistiques(){
+  const [{ data:opps }, { data:prs }, { data:pres }] = await Promise.all([
+    base.from("opportunites").select("*"),
+    base.from("primes").select("*"),
+    base.from("prescripteurs").select("*")
+  ]);
+  const o = opps||[], p = prs||[];
+  const parReseau = RESEAUX.map(r => {
+    const so = o.filter(x => x.reseau_id === r.id);
+    const sp = p.filter(x => x.reseau_id === r.id && x.statut === "versee");
+    return {
+      nom: r.nom,
+      opportunites: so.length,
+      ventes: so.filter(x => ["vente_realisee","prime_versee"].includes(x.statut)).length,
+      prescripteurs: (pres||[]).filter(x => x.reseau_id === r.id).length,
+      verse: sp.reduce((s,x)=>s+(x.montant_euros||0),0)
+    };
+  });
+  const maxO = Math.max(1, ...parReseau.map(x => x.opportunites));
+  const abouties = o.filter(x => ["vente_realisee","prime_versee"].includes(x.statut)).length;
+
+  $("vue").innerHTML = `
+    <h1>Statistiques</h1>
+    <p class="sous">Depuis le début du programme.</p>
+    <div class="compteurs">
+      <div class="compteur"><span class="val">${o.length}</span><span class="lib">opportunités</span></div>
+      <div class="compteur"><span class="val">${abouties}</span><span class="lib">abouties</span></div>
+      <div class="compteur"><span class="val">${o.length ? Math.round(abouties/o.length*100) : 0}&nbsp;%</span><span class="lib">taux d'aboutissement</span></div>
+      <div class="compteur"><span class="val">${(pres||[]).length}</span><span class="lib">prescripteurs</span></div>
+    </div>
+
+    <div class="bloc">
+      <div class="bloc-tete"><h3>Opportunités par réseau</h3></div>
+      <div style="padding:16px" class="barres">
+        ${parReseau.map(x => `<div class="barre">
+          <div class="haut"><span>${ec(x.nom)}</span><span class="num">${x.opportunites}</span></div>
+          <div class="piste"><div class="part" style="width:${Math.round(x.opportunites/maxO*100)}%"></div></div>
+        </div>`).join("")}
+      </div>
+    </div>
+
+    <div class="bloc"><div class="tableau"><table>
+      <thead><tr><th>Réseau</th><th>Prescripteurs</th><th>Opportunités</th><th>Ventes</th><th>Primes versées</th></tr></thead>
+      <tbody>${parReseau.map(x => `<tr>
+        <td><strong>${ec(x.nom)}</strong></td>
+        <td class="num">${x.prescripteurs}</td>
+        <td class="num">${x.opportunites}</td>
+        <td class="num">${x.ventes}</td>
+        <td class="num" style="color:var(--or);font-weight:700">${euros(x.verse)}</td>
+      </tr>`).join("")}</tbody>
+    </table></div></div>
+  `;
+}
+
+/* ══════════════════ PARAMÈTRES ══════════════════ */
+async function parametres(){
+  const [{ data:regles }, { data:cons }] = await Promise.all([
+    base.from("regles_remuneration").select("*").order("libelle"),
+    base.from("conseillers").select("*").order("nom")
+  ]);
+  const calcul = (r) => r.mode === "forfait"
+    ? euros(r.montant_euros)
+    : r.taux_pourcent + " % des " + (r.assiette === "honoraires_bruts" ? "honoraires bruts" : "honoraires nets");
+
+  $("vue").innerHTML = `
+    <h1>Paramètres</h1>
+    <p class="sous">Les montants ne sont écrits nulle part dans le code : ce sont des données, modifiables ici.</p>
+
+    <div class="bloc">
+      <div class="bloc-tete"><h3>Règles de rémunération</h3></div>
+      <div class="tableau"><table>
+        <thead><tr><th>Réseau</th><th>Ce qui la déclenche</th><th>Calcul</th><th>Active</th></tr></thead>
+        <tbody>${(regles||[]).map(r => `<tr>
+          <td>${ec(nomReseau(r.reseau_id))}</td>
+          <td>${ec(r.libelle)}<br><span style="font-size:.8rem;color:var(--mousse)">${
+            r.declencheur==="acte_authentique" ? "signature de l'acte authentique" :
+            r.declencheur==="mandat_exclusif" ? "mandat exclusif signé" : "expertise remise et réglée"}</span></td>
+          <td class="num" style="color:var(--or);font-weight:700">${ec(calcul(r))}</td>
+          <td>${r.actif ? "Oui" : "Non"}</td>
+        </tr>`).join("")}</tbody>
+      </table></div>
+    </div>
+    <div class="msg info">Ces montants restent soumis à la relecture juridique. En particulier, l'article de la convention d'indicateur d'affaires fondant le caractère occasionnel sur un plafond de 3 ventes par an doit être réécrit, ce plafond ayant été supprimé côté gardiens.</div>
+
+    <div class="bloc">
+      <div class="bloc-tete"><h3>Réseaux</h3></div>
+      <div class="tableau"><table>
+        <thead><tr><th>Nom</th><th>Domaine</th><th>Catégorie</th><th>Actif</th></tr></thead>
+        <tbody>${RESEAUX.map(r => `<tr>
+          <td><strong>${ec(r.nom)}</strong></td>
+          <td>${ec(r.domaine)}</td>
+          <td><span class="cat">${ec(CATEGORIES[r.categorie]||r.categorie)}</span></td>
+          <td>${r.actif ? "Oui" : "Pas encore ouvert"}</td>
+        </tr>`).join("")}</tbody>
+      </table></div>
+      <p class="vide" style="padding:12px 16px;text-align:left">Ajouter un réseau se fait en ajoutant une ligne ici — jamais en modifiant le code.</p>
+    </div>
+
+    <div class="bloc">
+      <div class="bloc-tete"><h3>Conseillers</h3></div>
+      <div class="tableau"><table>
+        <thead><tr><th>Nom</th><th>E-mail</th><th>Réseau mandant</th></tr></thead>
+        <tbody>${(cons||[]).map(c => `<tr>
+          <td><strong>${ec(c.nom)}</strong></td><td>${ec(c.email||"—")}</td><td>${ec(c.reseau_mandant||"—")}</td>
+        </tr>`).join("")}</tbody>
+      </table></div>
+      <p class="vide" style="padding:12px 16px;text-align:left">Si une vente est conclue par un autre conseiller du même réseau, la prime reste due au prescripteur.</p>
+    </div>
+  `;
+}
+</script>
+</body>
+</html>
