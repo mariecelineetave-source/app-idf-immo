@@ -715,6 +715,12 @@ async function prescripteurs(){
             <input type="text" id="p-role" placeholder="Président"></label>
           <label class="champ"><span>Résidence <em style="font-style:normal;font-weight:400;text-transform:none">(gardiens)</em></span>
             <input type="text" id="p-residence"></label>
+          <label class="champ"><span>Enseigne <em style="font-style:normal;font-weight:400;text-transform:none">(pros)</em></span>
+            <input type="text" id="p-enseigne" placeholder="Salon Marine"></label>
+          <label class="champ"><span>Métier</span>
+            <input type="text" id="p-metier" placeholder="Coiffeuse, plombier, déménageur…"></label>
+          <label class="champ"><span>Commune</span>
+            <input type="text" id="p-commune" placeholder="Enghien-les-Bains"></label>
         </div>
         <button class="b b-1" id="p-creer">Créer la fiche</button>
       </div>
@@ -756,7 +762,10 @@ async function prescripteurs(){
       reseau_id: opt.value,
       organisation: $("p-orga").value.trim() || null,
       role_dans_organisation: $("p-role").value.trim() || null,
-      residence: $("p-residence").value.trim() || null
+      residence: $("p-residence").value.trim() || null,
+      enseigne: $("p-enseigne").value.trim() || null,
+      metier: $("p-metier").value.trim() || null,
+      commune: $("p-commune").value.trim() || null
     });
     b.disabled = false;
     if (error) return dire("Échec : " + error.message, "ko");
@@ -797,6 +806,7 @@ async function fichePrescripteur(id){
         <dt>Téléphone</dt><dd>${p.telephone ? '<a href="tel:'+ec(p.telephone)+'">'+ec(p.telephone)+'</a>' : "—"}</dd>
         <dt>Organisation</dt><dd>${ec(p.organisation || "—")}${p.role_dans_organisation ? " — "+ec(p.role_dans_organisation) : ""}</dd>
         <dt>Résidence</dt><dd>${ec(p.residence || "—")}</dd>
+        <dt>Enseigne</dt><dd>${ec(p.enseigne || "—")}${p.metier ? " — "+ec(p.metier) : ""}</dd>
         <dt>Commune</dt><dd>${ec(p.commune || "—")}</dd>
         <dt>IBAN</dt><dd>${p.iban ? ec(p.iban) : '<span style="color:var(--mousse)">non fourni — à demander avant le premier virement</span>'}</dd>
         <dt>Inscrit le</dt><dd>${date(p.cree_le)}</dd>
