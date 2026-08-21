@@ -238,7 +238,7 @@ const VIVANTES   = ["recue","qualifiee","contact_en_cours","projet_immobilier","
 
 const CATEGORIES = {
   gardien:"Gardien", etudiant:"Étudiant", association:"Association",
-  nounou:"Nounou", autre:"Autre"
+  nounou:"Nounou", professionnel:"Professionnel", autre:"Autre"
 };
 
 const RUBRIQUES = [
@@ -429,12 +429,60 @@ async function opportunites(){
   let q = base.from("opportunites").select("*").order("partagee_le",{ascending:false});
   if (fReseau) q = q.eq("reseau_id", fReseau);
   if (fStatut) q = q.eq("statut", fStatut);
-  const { data, error } = await q;
+  const [{ data, error }, { data: gens }] = await Promise.all([
+    q, base.from("prescripteurs").select("*").order("prenom")
+  ]);
   if (error) throw error;
 
   $("vue").innerHTML = `
     <h1>Opportunités</h1>
     <p class="sous">${(data||[]).length} opportunité(s) affichée(s).</p>
+
+    <details class="bloc" id="saisie">
+      <summary style="padding:13px 16px;cursor:pointer;font-weight:700;font-size:.95rem;background:#fff;
+        border-bottom:1px solid var(--ligne-fine)">+ Saisir une opportunité reçue par e-mail ou par téléphone</summary>
+      <div style="padding:14px 16px">
+        <p class="sous">C'est par ici que rentrent les opportunités des étudiants, des associations
+          et des nounous : elles arrivent dans votre boîte, vous les recopiez ici.</p>
+        <label class="champ"><span>De qui vient-elle ?</span>
+          <select id="n-qui">
+            <option value="">— choisir un prescripteur —</option>
+            ${(gens||[]).map(p => `<option value="${ec(p.id)}">${
+              ec([p.prenom, p.nom].filter(Boolean).join(" ") || p.email)} — ${
+              ec(CATEGORIES[p.categorie] || p.categorie)}${p.organisation ? " · " + ec(p.organisation) : ""}</option>`).join("")}
+          </select></label>
+        <p class="sous" style="margin:-6px 0 12px">La personne n'est pas dans la liste ?
+          <a href="#" id="vers-prescripteurs">Créez sa fiche d'abord</a> — elle n'a pas besoin
+          d'avoir ouvert son espace.</p>
+        <label class="champ"><span>Adresse du bien</span>
+          <input type="text" id="n-adresse" placeholder="8 rue de Paris, 91300 Massy"></label>
+        <div class="grille2">
+          <label class="champ"><span>Commune</span><input type="text" id="n-commune"></label>
+          <label class="champ"><span>Code postal</span><input type="text" id="n-cp" placeholder="91300"></label>
+          <label class="champ"><span>Type de bien</span>
+            <select id="n-type">
+              <option value="">Non précisé</option><option>Appartement</option><option>Maison</option>
+              <option>Studio</option><option>Terrain</option><option>Local ou autre</option>
+            </select></label>
+          <label class="champ"><span>Bâtiment, escalier, étage</span><input type="text" id="n-precision"></label>
+          <label class="champ"><span>Nom du propriétaire</span><input type="text" id="n-pnom"></label>
+          <label class="champ"><span>Téléphone du propriétaire</span><input type="tel" id="n-ptel"></label>
+        </div>
+        <label class="champ"><span>Ce que le prescripteur sait</span>
+          <textarea id="n-details"></textarea></label>
+        <label style="display:flex;gap:9px;align-items:flex-start;margin-bottom:9px">
+          <input type="checkbox" id="n-accord" style="width:19px;height:19px;margin-top:3px">
+          <span style="font-size:.92rem">Le propriétaire a donné son accord pour être appelé
+            <em style="color:var(--mousse);font-style:normal">— obligatoire si vous saisissez son téléphone</em></span></label>
+        <label style="display:flex;gap:9px;align-items:flex-start;margin-bottom:9px">
+          <input type="checkbox" id="n-cite" style="width:19px;height:19px;margin-top:3px">
+          <span style="font-size:.92rem">On peut citer le prescripteur au propriétaire</span></label>
+        <label style="display:flex;gap:9px;align-items:flex-start;margin-bottom:14px">
+          <input type="checkbox" id="n-numero" style="width:19px;height:19px;margin-top:3px">
+          <span style="font-size:.92rem">Il a aussi donné notre numéro au propriétaire</span></label>
+        <button class="b b-1" id="n-creer">Créer l'opportunité</button>
+      </div>
+    </details>
     <div class="filtres">
       <select id="f-reseau"><option value="">Tous les réseaux</option>
         ${RESEAUX.map(r => `<option value="${ec(r.id)}"${r.id===fReseau?" selected":""}>${ec(r.nom)}</option>`).join("")}
@@ -448,6 +496,41 @@ async function opportunites(){
   `;
   $("f-reseau").addEventListener("change", e => { fReseau = e.target.value; peindre(); });
   $("f-statut").addEventListener("change", e => { fStatut = e.target.value; peindre(); });
+  $("vers-prescripteurs").addEventListener("click", (e) => {
+    e.preventDefault(); RUBRIQUE = "prescripteurs"; DETAIL = null; peindre();
+  });
+
+  $("n-creer").addEventListener("click", async () => {
+    const b = $("n-creer");
+    if (!$("n-qui").value) return dire("Choisissez de qui vient cette opportunité.", "ko");
+    if (!$("n-adresse").value.trim()) return dire("L'adresse du bien est indispensable.", "ko");
+    // La base refuse un téléphone de propriétaire sans accord recueilli : on le
+    // dit ici plutôt que de laisser tomber une erreur technique.
+    if ($("n-ptel").value.trim() && !$("n-accord").checked)
+      return dire("Sans accord recueilli, on ne peut pas enregistrer le téléphone du propriétaire.", "ko");
+    b.disabled = true;
+    const { error } = await base.from("opportunites").insert({
+      prescripteur_id: $("n-qui").value,
+      adresse_saisie: $("n-adresse").value.trim(),
+      commune: $("n-commune").value.trim() || null,
+      code_postal: $("n-cp").value.trim() || null,
+      departement: ($("n-cp").value.trim() || "").slice(0,2) || null,
+      type_bien: $("n-type").value || null,
+      etage: $("n-precision").value.trim() || null,
+      details: $("n-details").value.trim() || null,
+      proprietaire_nom: $("n-pnom").value.trim() || null,
+      proprietaire_tel: $("n-ptel").value.trim() || null,
+      accord_atteste: $("n-accord").checked,
+      citation_autorisee: $("n-cite").checked,
+      numero_transmis: $("n-numero").checked,
+      saisie_par: "manuelle"
+    });
+    b.disabled = false;
+    if (error) return dire("Échec : " + error.message, "ko");
+    dire("Opportunité créée. Le prescripteur la voit désormais dans son espace.", "ok");
+    peindre();
+  });
+
   brancherLignes();
 }
 
@@ -608,6 +691,35 @@ async function prescripteurs(){
   $("vue").innerHTML = `
     <h1>Prescripteurs</h1>
     <p class="sous">${(data||[]).length} personne(s). Un seul système, toutes catégories confondues.</p>
+
+    <details class="bloc">
+      <summary style="padding:13px 16px;cursor:pointer;font-weight:700;font-size:.95rem;background:#fff;
+        border-bottom:1px solid var(--ligne-fine)">+ Créer la fiche de quelqu'un qui vous a appelée</summary>
+      <div style="padding:14px 16px">
+        <p class="sous">La personne n'a pas besoin d'avoir ouvert son espace. Le jour où elle
+          se connectera avec cette adresse e-mail, elle retrouvera automatiquement sa fiche,
+          ses opportunités et ses primes.</p>
+        <div class="grille2">
+          <label class="champ"><span>Prénom</span><input type="text" id="p-prenom"></label>
+          <label class="champ"><span>Nom</span><input type="text" id="p-nom-n"></label>
+          <label class="champ"><span>E-mail</span>
+            <input type="email" id="p-email" placeholder="lea@exemple.fr"></label>
+          <label class="champ"><span>Téléphone</span><input type="tel" id="p-tel"></label>
+          <label class="champ"><span>Réseau</span>
+            <select id="p-reseau">
+              ${RESEAUX.map(r => `<option value="${ec(r.id)}" data-cat="${ec(r.categorie)}">${ec(r.nom)}</option>`).join("")}
+            </select></label>
+          <label class="champ"><span>Organisation <em style="font-style:normal;font-weight:400;text-transform:none">(associations)</em></span>
+            <input type="text" id="p-orga" placeholder="Club sportif de Massy"></label>
+          <label class="champ"><span>Rôle dans l'organisation</span>
+            <input type="text" id="p-role" placeholder="Président"></label>
+          <label class="champ"><span>Résidence <em style="font-style:normal;font-weight:400;text-transform:none">(gardiens)</em></span>
+            <input type="text" id="p-residence"></label>
+        </div>
+        <button class="b b-1" id="p-creer">Créer la fiche</button>
+      </div>
+    </details>
+
     <div class="filtres">
       <select id="f-cat"><option value="">Toutes les catégories</option>
         ${Object.entries(CATEGORIES).map(([k,v]) =>
@@ -627,6 +739,31 @@ async function prescripteurs(){
       : '<div class="bloc"><p class="vide">Aucun prescripteur pour l\'instant.</p></div>'}
   `;
   $("f-cat").addEventListener("change", e => { fCat = e.target.value; peindre(); });
+
+  $("p-creer").addEventListener("click", async () => {
+    const b = $("p-creer");
+    const email = $("p-email").value.trim();
+    if (!email || email.indexOf("@") < 1)
+      return dire("L'e-mail est indispensable : c'est lui qui rattachera la fiche au compte.", "ko");
+    const opt = $("p-reseau").selectedOptions[0];
+    b.disabled = true;
+    const { error } = await base.from("prescripteurs").insert({
+      prenom: $("p-prenom").value.trim() || email.split("@")[0],
+      nom: $("p-nom-n").value.trim() || null,
+      email,
+      telephone: $("p-tel").value.trim() || null,
+      categorie: opt.dataset.cat,
+      reseau_id: opt.value,
+      organisation: $("p-orga").value.trim() || null,
+      role_dans_organisation: $("p-role").value.trim() || null,
+      residence: $("p-residence").value.trim() || null
+    });
+    b.disabled = false;
+    if (error) return dire("Échec : " + error.message, "ko");
+    dire("Fiche créée. Vous pouvez maintenant saisir ses opportunités.", "ok");
+    peindre();
+  });
+
   brancherLignes();
 }
 
@@ -734,13 +871,16 @@ async function estimations(){
       </div>
     </div>
     ${(data||[]).length ? `<div class="bloc"><div class="tableau"><table>
-      <thead><tr><th>Type</th><th>Valeur</th><th>Remise</th><th>Réglée</th><th>Honoraires nets</th></tr></thead>
+      <thead><tr><th>Type</th><th>Valeur</th><th>Remise</th><th>Réglée</th><th>Honoraires nets</th><th></th></tr></thead>
       <tbody>${data.map(x => `<tr>
         <td>${x.type==="expertise_valeur_venale" ? "<strong>Expertise valeur vénale</strong>" : "Avis de valeur"}</td>
         <td class="num">${euros(x.valeur_euros)}</td>
         <td class="num">${date(x.remise_le)}</td>
         <td class="num">${date(x.reglee_le)}</td>
         <td class="num">${euros(x.honoraires_nets)}</td>
+        <td>${x.type==="expertise_valeur_venale" && x.reglee_le
+          ? `<button class="b b-petit b-or" data-expertise="${ec(x.id)}">Calculer la prime</button>`
+          : '<span style="font-size:.8rem;color:var(--mousse)">expertise réglée requise</span>'}</td>
       </tr>`).join("")}</tbody></table></div></div>` :
       '<div class="bloc"><p class="vide">Aucune estimation enregistrée.</p></div>'}
   `;
@@ -757,6 +897,11 @@ async function estimations(){
     if (error) return dire("Échec : " + error.message, "ko");
     dire("Estimation enregistrée.", "ok"); peindre();
   });
+  $("vue").querySelectorAll("button[data-expertise]").forEach(b =>
+    b.addEventListener("click", () => {
+      const e = (data || []).find(x => x.id === b.dataset.expertise);
+      if (e) creerPrime("expertise_reglee", e);
+    }));
 }
 
 async function mandats(){
@@ -788,12 +933,15 @@ async function mandats(){
       </div>
     </div>
     ${(data||[]).length ? `<div class="bloc"><div class="tableau"><table>
-      <thead><tr><th>Type</th><th>Exclusif</th><th>Diagnostics</th><th>Signé</th></tr></thead>
+      <thead><tr><th>Type</th><th>Exclusif</th><th>Diagnostics</th><th>Signé</th><th></th></tr></thead>
       <tbody>${data.map(x => `<tr>
         <td>${x.type==="recherche" ? "Recherche" : "Vente"}</td>
         <td>${x.exclusif ? "<strong>Oui</strong>" : "Non"}</td>
         <td>${x.diagnostics_faits ? "Oui" : "Non"}</td>
         <td class="num">${date(x.signe_le)}</td>
+        <td>${x.exclusif && x.diagnostics_faits && x.signe_le
+          ? `<button class="b b-petit b-or" data-mandat="${ec(x.id)}">Calculer la prime</button>`
+          : '<span style="font-size:.8rem;color:var(--mousse)">exclusif + diagnostics requis</span>'}</td>
       </tr>`).join("")}</tbody></table></div></div>` :
       '<div class="bloc"><p class="vide">Aucun mandat enregistré.</p></div>'}
   `;
@@ -809,6 +957,11 @@ async function mandats(){
     if (error) return dire("Échec : " + error.message, "ko");
     dire("Mandat enregistré.", "ok"); peindre();
   });
+  $("vue").querySelectorAll("button[data-mandat]").forEach(b =>
+    b.addEventListener("click", () => {
+      const m = (data || []).find(x => x.id === b.dataset.mandat);
+      if (m) creerPrime("mandat_exclusif", m);
+    }));
 }
 
 async function ventes(){
@@ -860,41 +1013,76 @@ async function ventes(){
     peindre();
   });
   $("vue").querySelectorAll("button[data-prime]").forEach(b =>
-    b.addEventListener("click", () => calculerPrime(b.dataset.prime)));
+    b.addEventListener("click", () => {
+      const v = (data || []).find(x => x.id === b.dataset.prime);
+      if (!v) return;
+      if (!v.acte_le) return dire("Sans date d'acte authentique, la prime n'est pas due.", "ko");
+      creerPrime("acte_authentique", v);
+    }));
 }
 
 /* La prime n'est jamais calculée par une formule cachée : on lit la règle du
-   réseau, on montre le résultat, et on demande confirmation. */
-async function calculerPrime(venteId){
-  const { data:v } = await base.from("ventes").select("*").eq("id", venteId).maybeSingle();
-  if (!v || !v.opportunite_id) return dire("Cette vente n'est rattachée à aucune opportunité : impossible de savoir à qui verser.", "ko");
-  if (!v.acte_le) return dire("Sans date d'acte authentique, la prime n'est pas due.", "ko");
-  const { data:o } = await base.from("opportunites").select("*").eq("id", v.opportunite_id).maybeSingle();
+   réseau pour ce déclencheur, on montre le résultat, et on demande confirmation.
+
+   Trois déclencheurs existent, et chacun a son écran :
+     acte_authentique  → depuis Ventes      (1 000 € gardiens, 800 € étudiants, 10 % associations)
+     mandat_exclusif   → depuis Mandats     (50 € étudiants)
+     expertise_reglee  → depuis Estimations (10 % associations, SANS vente) */
+async function creerPrime(declencheur, source){
+  if (!source.opportunite_id)
+    return dire("Cette ligne n'est rattachée à aucune opportunité : impossible de savoir à qui verser.", "ko");
+
+  const { data:o } = await base.from("opportunites").select("*")
+    .eq("id", source.opportunite_id).maybeSingle();
+  if (!o) return dire("Opportunité introuvable.", "ko");
+
   const { data:regles } = await base.from("regles_remuneration").select("*")
-    .eq("reseau_id", o.reseau_id).eq("declencheur","acte_authentique").eq("actif", true);
-  if (!regles || !regles.length) return dire("Aucune règle de rémunération active pour ce réseau.", "ko");
+    .eq("reseau_id", o.reseau_id).eq("declencheur", declencheur).eq("actif", true);
+  if (!regles || !regles.length)
+    return dire("Aucune règle active pour ce réseau et ce déclencheur. Voyez Paramètres.", "ko");
   const r = regles[0];
 
   let montant, exact = null;
-  if (r.mode === "forfait"){ montant = r.montant_euros; }
-  else {
-    const assiette = r.assiette === "honoraires_bruts" ? v.honoraires_bruts : v.honoraires_nets;
-    if (!assiette) return dire("Renseignez les honoraires nets de cette vente pour calculer le pourcentage.", "ko");
+  if (r.mode === "forfait"){
+    montant = r.montant_euros;
+  } else {
+    const assiette = r.assiette === "honoraires_bruts"
+      ? source.honoraires_bruts : source.honoraires_nets;
+    if (!assiette)
+      return dire("Renseignez les honoraires nets de cette ligne pour calculer le pourcentage.", "ko");
     exact = Math.round(Number(assiette) * Number(r.taux_pourcent)) / 100;
     montant = Math.round(exact);
   }
-  const ok = confirm(`Règle appliquée : ${r.libelle}\n\nPrime : ${montant} €` +
-    (exact !== null ? ` (exactement ${exact} €)` : "") + `\n\nCréer cette prime ?`);
-  if (!ok) return;
 
-  const { error } = await base.from("primes").insert({
+  // Une même opportunité peut porter deux primes (mandat PUIS vente) : on ne
+  // bloque pas, mais on prévient si le même déclencheur a déjà été payé.
+  const { data:deja } = await base.from("primes").select("id")
+    .eq("opportunite_id", o.id).eq("regle_id", r.id);
+  const avert = (deja && deja.length)
+    ? "\n\n⚠️ Une prime a DÉJÀ été créée pour cette règle sur cette opportunité." : "";
+
+  if (!confirm("Règle appliquée : " + r.libelle + "\n\nPrime : " + montant + " €" +
+      (exact !== null ? " (exactement " + exact + " €)" : "") + avert +
+      "\n\nCréer cette prime ?")) return;
+
+  const ligne = {
     opportunite_id: o.id, prescripteur_id: o.prescripteur_id, reseau_id: o.reseau_id,
-    regle_id: r.id, vente_id: v.id, montant_euros: montant, montant_exact: exact,
-    statut: "a_verser", acte_le: v.acte_le
-  });
+    regle_id: r.id, montant_euros: montant, montant_exact: exact, statut: "a_verser"
+  };
+  if (declencheur === "acte_authentique"){ ligne.vente_id = source.id; ligne.acte_le = source.acte_le; }
+  if (declencheur === "mandat_exclusif")  ligne.mandat_id = source.id;
+  if (declencheur === "expertise_reglee") ligne.estimation_id = source.id;
+
+  const { error } = await base.from("primes").insert(ligne);
   if (error) return dire("Échec : " + error.message, "ko");
-  await base.from("opportunites").update({ statut:"vente_realisee" }).eq("id", o.id);
-  dire("Prime créée et opportunité passée en « vente réalisée ».", "ok");
+
+  // Seule la vente fait avancer l'opportunité : un mandat n'est pas une vente.
+  if (declencheur === "acte_authentique")
+    await base.from("opportunites").update({ statut:"vente_realisee" }).eq("id", o.id);
+  else if (declencheur === "expertise_reglee" && o.statut !== "vente_realisee")
+    await base.from("opportunites").update({ statut:"expertise_remise" }).eq("id", o.id);
+
+  dire("Prime de " + montant + " € créée. Elle attend son virement.", "ok");
   RUBRIQUE = "primes"; peindre();
 }
 

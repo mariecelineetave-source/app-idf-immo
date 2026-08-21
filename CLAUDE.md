@@ -55,11 +55,16 @@ prime, toujours accompagnées d'un motif.
 ```
 idf.immo                    libre — futur site institutionnel
 ├── app.idf.immo            CE DÉPÔT — back-office, Marie-Céline seule
-├── gardiens.idf.immo       GELÉ
-├── etudiants.idf.immo      GELÉ
-├── associations.idf.immo   GELÉ
-└── nounous.idf.immo        futur — ne rien construire
+├── gardiens.idf.immo       GELÉ · en ligne
+├── etudiants.idf.immo      GELÉ · en ligne
+├── associations.idf.immo   GELÉ · en ligne
+├── nounous.idf.immo        GELÉ · en ligne depuis le 21 août
+└── pros.idf.immo           annoncé par Marie-Céline, domaine pas encore créé
 ```
+
+Hors famille `idf.immo`, et hors socle : `antony.immo`, `paris7e.immo` et
+`cse.immo` s'adressent à des clients, pas à des prescripteurs. Ne pas les
+brancher sans demande explicite.
 
 - **Un seul projet Supabase**, celui qui servait déjà les gardiens. Pas de
   seconde base : une migration est précisément le moment où un site protégé
@@ -85,6 +90,32 @@ De même, `primes.montant_euros` doit **rester un entier** : le site l'affiche
 avec `toLocaleString` et écrirait « 1000.00 » si la colonne devenait `numeric`.
 Les rémunérations en pourcentage rangent leur centime exact dans
 `montant_exact`, à côté.
+
+## Une vue par réseau — à ne jamais casser
+
+Chaque site de la famille lit une table portant **son propre nom** :
+`gardiens.idf.immo` lit `gardiens`, `nounous.idf.immo` lit `nounous`. Ces noms
+sont des **vues** sur `prescripteurs`, filtrées par catégorie, avec
+`security_invoker = true` et deux déclencheurs `instead of`.
+
+**Quand un nouveau réseau ouvre, il faut lui créer sa vue** (bloc 4 de
+`base/correctif-1.sql`) — sinon son espace personnel est cassé dès le premier
+jour. C'est ce qui est arrivé à nounous.idf.immo, mis en ligne avant que sa vue
+n'existe.
+
+Les neuf colonnes attendues par les sites :
+`id, prenom, nom, email, telephone, residence, commune, iban, cree_le`.
+
+## Une fiche peut exister avant le compte
+
+Un prescripteur qui téléphone, ou qui remplit le formulaire sans ouvrir son
+espace, doit pouvoir être enregistré. La fiche est donc créée par le conseiller
+avec une clé libre, et `fiche_de_ce_compte()` la **rattache automatiquement** au
+compte le jour où la personne se connecte — avec ses opportunités et ses primes,
+qui suivent par `on update cascade`.
+
+Ce rattachement est appelé depuis les déclencheurs des vues : **les sites gelés
+en profitent sans qu'une ligne de leur code ne change.**
 
 ## Les règles de rémunération ne sont jamais codées en dur
 
@@ -114,8 +145,10 @@ ayant été supprimé côté gardiens.
 
 ## Structure du dépôt
 
-- `base/socle.sql` — la migration. **Rejouable**, testée sur une copie complète
-  de la base avant livraison.
+- `base/socle.sql` — la migration initiale. **Rejouable**, testée sur une copie
+  complète de la base avant livraison.
+- `base/correctif-1.sql` — le correctif nº 1 : saisie par le conseiller, fiche
+  avant compte, vue `nounous`, ouverture du réseau nounous.
 - `base/installer.html` — page de copie du script, pour installer depuis un
   iPad sans avoir à sélectionner 400 lignes au doigt.
 - `base/config.js` — URL du projet et clé publiable. Aucun secret : la

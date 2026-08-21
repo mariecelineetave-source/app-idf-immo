@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
-<title>Installer le socle — app.idf.immo</title>
+<title>Installer un script — app.idf.immo</title>
 <style>
 :root{
   --nuit:#0E2E52; --ombre:#10233C; --encre:#132639; --mousse:#5C6B80;
@@ -115,7 +115,7 @@ textarea{width:100%;height:150px;font-family:ui-monospace,Menlo,Consolas,monospa
   var compte = document.getElementById("compte");
   var script = null;
 
-  fetch("socle.sql")
+  fetch(new URLSearchParams(location.search).get("fichier") || "socle.sql")
     .then(function(r){ if(!r.ok) throw new Error(r.status); return r.text(); })
     .then(function(t){
       script = t;
