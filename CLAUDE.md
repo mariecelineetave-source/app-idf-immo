@@ -59,7 +59,7 @@ idf.immo                    libre — futur site institutionnel
 ├── etudiants.idf.immo      GELÉ · en ligne
 ├── associations.idf.immo   GELÉ · en ligne
 ├── nounous.idf.immo        GELÉ · en ligne depuis le 21 août
-└── pros.idf.immo           annoncé par Marie-Céline, domaine pas encore créé
+└── pros.idf.immo           GELÉ · en ligne depuis le 21 août
 ```
 
 Hors famille `idf.immo`, et hors socle : `antony.immo`, `paris7e.immo` et
@@ -101,7 +101,16 @@ sont des **vues** sur `prescripteurs`, filtrées par catégorie, avec
 **Quand un nouveau réseau ouvre, il faut lui créer sa vue** (bloc 4 de
 `base/correctif-1.sql`) — sinon son espace personnel est cassé dès le premier
 jour. C'est ce qui est arrivé à nounous.idf.immo, mis en ligne avant que sa vue
-n'existe.
+n'existe. La vue de `pros.idf.immo` est créée par `base/correctif-2.sql` ; ses
+colonnes diffèrent des autres — un commerçant a une **enseigne** et un
+**métier** là où un gardien a sa résidence.
+
+⚠️ **`nounous.idf.immo` ne pointe pas sur ce projet.** Son `base/config.js`
+désigne `bhyshzolavkgcdtdfrkj.supabase.co`, une seconde base créée le 20 août :
+les fiches et les opportunités des nounous n'arrivent donc pas dans ce
+back-office, et la vue `nounous` du socle ne reçoit rien. À rapatrier (changer
+son `config.js`, puis migrer le peu de données déjà saisies) avant d'ouvrir le
+réseau pour de bon.
 
 Les neuf colonnes attendues par les sites :
 `id, prenom, nom, email, telephone, residence, commune, iban, cree_le`.
