@@ -27,7 +27,9 @@ pour lui.
 |---|---|
 | Audit des trois sites existants | ✅ fait |
 | Architecture et modèle de données | ✅ validés |
-| Migration de la base (`base/socle.sql`) | ✅ écrite et testée, **reste à exécuter** |
+| Migration de la base (`base/socle.sql`) | ✅ exécutée |
+| `base/correctif-1.sql` (fiche avant compte, vues par réseau) | ✅ exécuté le 21 août 2026 |
+| `base/correctif-2a-enum.sql` + `base/correctif-2.sql` (pros) | ✅ exécutés le 21 août 2026 |
 | Domaine `app.idf.immo` | ⬜ à créer chez Gandi |
 | Back-office (les 10 rubriques) | ⬜ à construire |
 | Pages « Partager » et « Mon espace » — étudiants, associations | ⬜ à construire |

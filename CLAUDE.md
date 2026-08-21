@@ -100,7 +100,8 @@ sont des **vues** sur `prescripteurs`, filtrées par catégorie, avec
 
 **Quand un nouveau réseau ouvre, il faut lui créer sa vue** (bloc 4 de
 `base/correctif-1.sql`) — sinon son espace personnel est cassé dès le premier
-jour. C'est ce qui est arrivé à nounous.idf.immo, mis en ligne avant que sa vue
+jour. Vérifié en production le 21 août 2026 : les cinq vues (`gardiens`,
+`nounous`, `etudiants`, `associations`, `pros`) existent et répondent. C'est ce qui est arrivé à nounous.idf.immo, mis en ligne avant que sa vue
 n'existe. La vue de `pros.idf.immo` est créée par `base/correctif-2.sql` ; ses
 colonnes diffèrent des autres — un commerçant a une **enseigne** et un
 **métier** là où un gardien a sa résidence.
