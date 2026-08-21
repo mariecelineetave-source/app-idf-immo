@@ -47,16 +47,16 @@ textarea{width:100%;height:150px;font-family:ui-monospace,Menlo,Consolas,monospa
 <body>
 <div class="c">
 
-<h1>Installer le socle central</h1>
-<p class="sous">Le script est long (plus de 400 lignes) : impossible à sélectionner au doigt. Le bouton ci-dessous le copie en entier, d'un seul coup.</p>
+<h1 id="titre">Installer le socle central</h1>
+<p class="sous" id="sous">Le script est long : impossible à sélectionner au doigt. Le bouton ci-dessous le copie en entier, d'un seul coup.</p>
 
-<div class="avert">
-  <p><strong>Avant de commencer.</strong> Ce script s'applique au projet Supabase qui fait déjà tourner <code>gardiens.idf.immo</code>. Il ne crée pas de seconde base : il transforme celle-ci en socle commun aux quatre réseaux.</p>
+<div class="avert" id="avert">
+  <p id="avert-1"><strong>Avant de commencer.</strong> Ce script s'applique au projet Supabase qui fait déjà tourner <code>gardiens.idf.immo</code>. Il ne crée pas de seconde base : il transforme celle-ci en socle commun aux quatre réseaux.</p>
   <p style="margin-bottom:0">Il a été exécuté et vérifié sur une copie complète de la base avant de t'être donné. Il peut être lancé deux fois sans rien casser.</p>
 </div>
 
 <div class="bien">
-  <p style="margin-bottom:0"><strong>gardiens.idf.immo ne bougera pas.</strong> La table que le site lit devient une vue portant le même nom et les mêmes colonnes. Vérifié : la fiche du gardien, ses opportunités, ses primes et son journal reviennent à l'identique après migration.</p>
+  <p style="margin-bottom:0" id="bien-1"><strong>gardiens.idf.immo ne bougera pas.</strong> La table que le site lit devient une vue portant le même nom et les mêmes colonnes. Vérifié : la fiche du gardien, ses opportunités, ses primes et son journal reviennent à l'identique après migration.</p>
 </div>
 
 <button class="gros" id="copier">Copier le script en entier</button>
@@ -97,7 +97,7 @@ textarea{width:100%;height:150px;font-family:ui-monospace,Menlo,Consolas,monospa
 <h2>Puis vérifie que rien n'a bougé</h2>
 <p>Toujours dans le SQL Editor, efface tout, colle cette seule ligne et clique sur Run :</p>
 <textarea readonly id="verif">select * from gardiens;</textarea>
-<p>Tu dois voir la liste des gardiens, avec les mêmes colonnes qu'avant : <code>id</code>, <code>prenom</code>, <code>nom</code>, <code>email</code>, <code>telephone</code>, <code>residence</code>, <code>commune</code>, <code>iban</code>, <code>cree_le</code>. Si c'est le cas, le site des gardiens est intact.</p>
+<p id="verif-texte">Tu dois voir la liste des gardiens, avec les mêmes colonnes qu'avant : <code>id</code>, <code>prenom</code>, <code>nom</code>, <code>email</code>, <code>telephone</code>, <code>residence</code>, <code>commune</code>, <code>iban</code>, <code>cree_le</code>. Si c'est le cas, le site des gardiens est intact.</p>
 
 <h2>Si quelque chose se passe mal</h2>
 <p>Ne recommence pas dix fois : envoie-moi le message d'erreur en entier, tel qu'il s'affiche. Il me dit exactement quelle ligne a coincé.</p>
@@ -109,13 +109,39 @@ textarea{width:100%;height:150px;font-family:ui-monospace,Menlo,Consolas,monospa
 
 <script>
 (function(){
+  // Un seul modèle de page, un texte par script installé. Le contenu par
+  // défaut de la page est celui du socle : on ne remplace que si besoin.
+  var TEXTES = {
+    "correctif-1.sql": {
+      titre : "Installer le correctif n\u00ba 1",
+      sous  : "Le socle est d\u00e9j\u00e0 en place. Ce second script r\u00e9pare quatre choses trouv\u00e9es en rejouant toute la cha\u00eene sur une copie de la base. Un seul copier-coller.",
+      avert : "<strong>Avant de commencer.</strong> M\u00eame projet Supabase que la premi\u00e8re fois, m\u00eame endroit : SQL&nbsp;Editor. Ce script <em>compl\u00e8te</em> le socle, il ne le refait pas.",
+      bien  : "<strong>Aucun site public n\u2019est touch\u00e9.</strong> Le script ajoute des droits et une vue au nom de <code>nounous</code>, pour que nounous.idf.immo cesse d\u2019\u00eatre cass\u00e9 sans qu\u2019une ligne de son code ne change.",
+      verif : "select * from nounous;",
+      verifTexte : "Tu dois voir un tableau <strong>vide</strong>, mais avec les neuf ent\u00eates de colonnes : <code>id</code>, <code>prenom</code>, <code>nom</code>, <code>email</code>, <code>telephone</code>, <code>residence</code>, <code>commune</code>, <code>iban</code>, <code>cree_le</code>. Vide est la bonne r\u00e9ponse : aucune nounou ne s\u2019est encore inscrite. Ce qui compte, c\u2019est qu\u2019il n\u2019y ait plus d\u2019erreur."
+    }
+  };
+  var fichier = new URLSearchParams(location.search).get("fichier") || "socle.sql";
+  var t = TEXTES[fichier];
+  if (t){
+    document.getElementById("titre").textContent = t.titre;
+    document.getElementById("sous").textContent  = t.sous;
+    document.getElementById("avert-1").innerHTML = t.avert;
+    document.getElementById("bien-1").innerHTML  = t.bien;
+    document.title = t.titre + " \u2014 app.idf.immo";
+    if (t.verif){
+      document.getElementById("verif").value = t.verif;
+      document.getElementById("verif-texte").innerHTML = t.verifTexte;
+    }
+  }
+
   var bouton = document.getElementById("copier");
   var etat   = document.getElementById("etat");
   var apercu = document.getElementById("apercu");
   var compte = document.getElementById("compte");
   var script = null;
 
-  fetch(new URLSearchParams(location.search).get("fichier") || "socle.sql")
+  fetch(fichier)
     .then(function(r){ if(!r.ok) throw new Error(r.status); return r.text(); })
     .then(function(t){
       script = t;
