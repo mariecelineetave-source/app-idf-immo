@@ -47,6 +47,13 @@ begin
   end loop;
 end $$;
 
+-- Le lien vers le réseau, lui, doit rester : la boucle ci-dessus l'a emporté
+-- avec les autres.
+do $$ begin
+  alter table prescripteurs add constraint prescripteurs_reseau_fk
+    foreign key (reseau_id) references reseaux(id);
+exception when duplicate_object then null; end $$;
+
 alter table prescripteurs alter column id set default gen_random_uuid();
 alter table prescripteurs alter column prenom drop not null;
 
@@ -209,9 +216,9 @@ drop function if exists gardiens_modification();
 -- ---------------------------------------------------------------------
 update reseaux set actif = true where code = 'nounous';
 
-do $$ begin
-  alter type categorie_prescripteur add value if not exists 'professionnel';
-exception when undefined_object then null; end $$;
+-- La catégorie « professionnel » a migré dans base/correctif-2a-enum.sql :
+-- PostgreSQL refuse qu'une valeur d'énumération soit utilisée dans la
+-- transaction qui l'ajoute, elle doit donc s'exécuter seule.
 
 -- ---------------------------------------------------------------------
 -- 6. Après l'exécution
