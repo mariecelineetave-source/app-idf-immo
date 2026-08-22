@@ -190,6 +190,29 @@ prescripteur.
 - `rapprocher()` et `purger_expirees()` restent hors de portée des
   prescripteurs : la première révèle des identités, la seconde efface.
 
+## Le domaine est authentifié chez Brevo
+
+Fait le 22 août 2026, par la configuration automatique de Brevo sur la zone
+Gandi. Vérifié dans le DNS public le soir même :
+
+| Enregistrement | État |
+|---|---|
+| SPF de la messagerie Gandi | **intact** — `v=spf1 include:_mailcust.gandi.net ?all` |
+| Code de vérification Brevo | présent, en TXT séparé |
+| DKIM | `brevo1._domainkey` et `brevo2._domainkey` → `b1`/`b2.idf-immo.dkim.brevo.com` |
+| DMARC | `v=DMARC1; p=none; rua=mailto:rua@dmarc.brevo.com` |
+| MX Gandi | intacts |
+
+**Le SPF n'a pas reçu `include:spf.brevo.com`, et c'est normal** : Brevo signe
+en DKIM sur `idf.immo` et utilise son propre Return-Path. C'est l'alignement
+DKIM qui fait passer DMARC. Ne pas « corriger » ce SPF : y toucher risquerait
+la messagerie Gandi pour rien.
+
+Le sous-domaine de suivi `em.idf.immo` était encore absent du DNS le soir même.
+Il ne sert qu'aux liens de suivi des campagnes, pas aux e-mails de connexion :
+sans conséquence sur le fonctionnement des réseaux. À revérifier si un jour les
+statistiques d'ouverture comptent.
+
 ## L'expéditeur d'e-mails
 
 L'expéditeur personnalisé est **en place**, vérifié le 22 août 2026 depuis
