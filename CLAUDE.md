@@ -190,12 +190,30 @@ prescripteur.
 - `rapprocher()` et `purger_expirees()` restent hors de portée des
   prescripteurs : la première révèle des identités, la seconde efface.
 
-## ⚠️ Préalable au lancement
+## L'expéditeur d'e-mails
 
-L'**expéditeur d'e-mails (Brevo)** n'est toujours pas installé sur le projet
-Supabase. Sans lui, aucun lien de connexion ne part : ni pour les prescripteurs,
-ni pour Marie-Céline sur app.idf.immo. À rappeler dès qu'il est question de
-diffusion, d'affiche, de QR code ou de lancement.
+L'expéditeur personnalisé est **en place**, vérifié le 22 août 2026 depuis
+l'extérieur : trois demandes de lien de connexion consécutives vers une adresse
+qui n'est PAS membre du projet Supabase ont été acceptées. Sans expéditeur
+personnalisé, la première aurait été refusée (« Email address not authorized »)
+et le plafond serait de deux messages par heure. La méthode de vérification, à
+rejouer si le doute revient :
+
+```
+curl -s -w '\nHTTP %{http_code}\n' -X POST \
+  "https://uiciolavnalimrjlpesx.supabase.co/auth/v1/otp" \
+  -H "apikey: sb_publishable_rCVYAzc9PyppEfijDMdHzg_C--mKXj1" \
+  -H "Content-Type: application/json" \
+  -d '{"email":"verification-smtp@idf.immo"}'
+```
+
+**200** = un expéditeur personnalisé répond. **« Email address not authorized »**
+= on est retombé sur l'envoi inclus de Supabase, et plus rien ne part vers les
+prescripteurs.
+
+Ce point a longtemps été noté comme bloquant dans tous les dépôts de la
+famille, sans que personne ne le vérifie : Marie-Céline avait déjà un compte
+Brevo. **Vérifier avant d'annoncer un blocage.**
 
 ## Divers
 

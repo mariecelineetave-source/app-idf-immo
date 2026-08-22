@@ -33,7 +33,7 @@ pour lui.
 | Domaine `app.idf.immo` | ⬜ à créer chez Gandi |
 | Back-office (les 10 rubriques) | ⬜ à construire |
 | Pages « Partager » et « Mon espace » — étudiants, associations | ⬜ à construire |
-| Expéditeur d'e-mails (Brevo) | ⬜ **bloquant avant tout lancement** |
+| Expéditeur d'e-mails (Brevo) | ✅ en place, vérifié le 22 août 2026 |
 
 ---
 
